@@ -26,16 +26,14 @@ class Corpus:
         self.stop_words = self.TWITTER_TOKENS
         self.stop_words.extend(list(string.punctuation))
         self.stop_words.extend(stopwords.words(self.LANGUAGE))
-        print 'Stop words:', self.stop_words
         self.df = pandas.read_csv(source_file_path, sep='\t', encoding='utf-8')
         self.df['date'] = pandas.to_datetime(self.df.date)
         self.size = self.df.count(0)[0]
         self.start_date = self.df['date'].min()
         self.end_date = self.df['date'].max()
-        print 'Corpus: %i tweets, spanning from %s to %s' % (self.size, self.start_date, self.end_date)
-        
+
         #A SortedSet of WordFrequency that are tuple (words, frequency)
-        self.vocabulary=SortedSet()
+        self.vocabulary = SortedSet()
         
         for i in range(0, self.size):
             #Remove links
@@ -59,13 +57,11 @@ class Corpus:
                     #Add 1 to the frequency
                     self.vocabulary[self.vocabulary.index(wf)].incrFrequecy()
                     
-        print 'Complete vocabulary: %i unique words' % len(self.vocabulary)
         #We delete the less frequent words to keep MAX_FEATURES words as features
         if len(self.vocabulary) > self.MAX_FEATURES:
             for i in range(self.MAX_FEATURES, len(self.vocabulary)):
                 del self.vocabulary[len(self.vocabulary) - 1]
                 
-        print 'Pruned vocabulary: %i unique words' % len(self.vocabulary)
         self.time_slice_count = None
         self.tweet_count = None
         self.global_freq = None
@@ -101,7 +97,7 @@ class Corpus:
                         self.mention_freq[row, column] = self.mention_freq.item((row, column)) + 1
 
     def cooccurring_words(self, event, p):
-        main_word = event[2].getWord().replace(')', '').replace('(', '')
+        main_word = event[2].replace(')', '').replace('(', '')
         filtered_df_0 = self.df.loc[self.df['time_slice'].isin(range(event[1][0], event[1][1]))]
         filtered_df = filtered_df_0.loc[filtered_df_0['text'].str.contains(main_word)]
         tmp_vocabulary = {}
