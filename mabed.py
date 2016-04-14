@@ -124,7 +124,6 @@ class MABED:
         main_word = event[2].getWord()
         if self.event_graph.has_node(main_word):
             for related_word, weight in event[3]:
-                print main_word, related_word, type(main_word), type(related_word)
                 if self.event_graph.has_edge(main_word, related_word):
                     interval_0 = self.event_graph.node[related_word]['interval']
                     interval_1 = event[1]
@@ -134,9 +133,9 @@ class MABED:
                         self.redundancy_graph.add_edge(main_word, related_word)
                         redundant = True
         if not redundant:
-            self.event_graph.add_node(event[2], interval=event[1], main_term=True)
+            self.event_graph.add_node(event[2].getWord(), interval=event[1], main_term=True)
             for related_word, weight in event[3]:
-                self.event_graph.add_edge(related_word, event[2], weight=weight)
+                self.event_graph.add_edge(related_word, event[2].getWord(), weight=weight)
         return not redundant
 
     def merge_redundant_events(self, events):
