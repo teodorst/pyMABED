@@ -10,6 +10,9 @@ from datetime import timedelta
 from sortedcontainers import  SortedSet
 from indexer.bow import WordFrequency
 
+import timeit
+
+
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
 
@@ -39,6 +42,14 @@ class Corpus:
             text = re.sub(r'(?:https?\://)\S+', '', self.df.iloc[i]['text'])
             self.df.loc[i, 'text'] = text
             words = self.tokenize(text)
+            if (i % 10000 == 0):
+                if (i == 0) :
+                    start_time = timeit.default_timer()
+                else :
+                    # code you want to evaluate
+                    elapsed = timeit.default_timer() - start_time
+                    print "10.000 rows tokenized in "+ str(elapsed)+ " seconds"
+                    start_time = timeit.default_timer()
             for word in set(words):
                 #remove stop words
                 if word not in self.stop_words:

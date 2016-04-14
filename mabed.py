@@ -166,7 +166,7 @@ if __name__ == '__main__':
     my_corpus.discretize(30)
     utils.save_corpus(my_corpus, 'corpus/messages3.pickle')
     '''
-    my_corpus = Corpus('input/messages1.csv')
+    my_corpus = Corpus('input/messages2.csv')
     my_corpus.discretize(30)
     print 'Stop words:', my_corpus.stop_words
     print 'Corpus: %i tweets, spanning from %s to %s' % (my_corpus.size, my_corpus.start_date, my_corpus.end_date)
