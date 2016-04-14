@@ -52,7 +52,7 @@ class Corpus:
         #We delete the less frequent words to keep MAX_FEATURES words as features
         if len(self.vocabulary) > self.MAX_FEATURES:
             for i in range(self.MAX_FEATURES, len(self.vocabulary)):
-                del self.vocabulary[i]
+                del self.vocabulary[len(self.vocabulary) - 1]
                 
         print 'Pruned vocabulary: %i unique words' % len(self.vocabulary)
         self.time_slice_count = None
@@ -90,7 +90,7 @@ class Corpus:
                         self.mention_freq[row, column] = self.mention_freq.item((row, column)) + 1
 
     def cooccurring_words(self, event, p):
-        main_word = event[2].replace(')', '').replace('(', '')
+        main_word = event[2].getWord().replace(')', '').replace('(', '')
         filtered_df_0 = self.df.loc[self.df['time_slice'].isin(range(event[1][0], event[1][1]))]
         filtered_df = filtered_df_0.loc[filtered_df_0['text'].str.contains(main_word)]
         tmp_vocabulary = {}

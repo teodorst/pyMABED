@@ -26,6 +26,12 @@ class WordFrequency:
                 return self.__word.__hash__() - other.__word.__hash__()
             return value
     
+    def getWord(self):
+        return self.__word
+    
+    def getFrequency(self):
+        return self.frequency
+    
     #For quick search in set
     def __lt__(self, other):
         return self.__word.__hash__() < other.__word.__hash__()

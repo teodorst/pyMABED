@@ -99,10 +99,11 @@ class MABED:
             basic_event = basic_events[i]
             main_word = basic_event[2]
             candidates_words = self.corpus.cooccurring_words(basic_event, 10)
-            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary[main_word], :]
+            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(main_word), :]
             related_words = []
             for candidate_word in candidates_words:
-                candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :]
+                cw=WordFrequency(candidate_word)
+                candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(cw), :]
                 weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
                 if weight > theta:
                     related_words.append((candidate_word, weight))
@@ -120,9 +121,10 @@ class MABED:
 
     def update_graphs(self, event, sigma):
         redundant = False
-        main_word = event[2]
+        main_word = event[2].getWord()
         if self.event_graph.has_node(main_word):
             for related_word, weight in event[3]:
+                print main_word, related_word, type(main_word), type(related_word)
                 if self.event_graph.has_edge(main_word, related_word):
                     interval_0 = self.event_graph.node[related_word]['interval']
                     interval_1 = event[1]
@@ -165,7 +167,8 @@ if __name__ == '__main__':
     my_corpus.discretize(30)
     utils.save_corpus(my_corpus, 'corpus/messages3.pickle')
     '''
-    my_corpus = utils.load_corpus('corpus/messages2.pickle')
+    my_corpus = Corpus('input/messages1.csv')
+    my_corpus.discretize(30)
     print 'Stop words:', my_corpus.stop_words
     print 'Corpus: %i tweets, spanning from %s to %s' % (my_corpus.size, my_corpus.start_date, my_corpus.end_date)
     print 'Vocabulary: %i unique tokens' % len(my_corpus.vocabulary)
