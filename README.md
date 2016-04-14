@@ -1,2 +1,4 @@
 # pyMABED
-Python implementation of MABED
+Python implementation of MABED (Mention-Anomaly-Based Event Detection)
+
+

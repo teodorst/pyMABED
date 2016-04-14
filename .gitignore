@@ -1,0 +1,8 @@
+
+.idea/
+
+*.pyc
+
+*.pickle
+
+input/all_messages.csv
