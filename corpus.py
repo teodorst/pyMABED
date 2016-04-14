@@ -31,27 +31,30 @@ class Corpus:
         self.end_date = self.df['date'].max()
         print 'Corpus: %i tweets, spanning from %s to %s' % (self.size, self.start_date, self.end_date)
         
-        #Un set trié
-        self.voc=SortedSet()
+        #A SortedSet of WordFrequency that are tuple (words, frequency)
+        self.vocabulary=SortedSet()
+        
         for i in range(0, self.size):
+            #Remove links
             text = re.sub(r'(?:https?\://)\S+', '', self.df.iloc[i]['text'])
             self.df.loc[i, 'text'] = text
             words = self.tokenize(text)
             for word in set(words):
+                #remove stop words
                 if word not in self.stop_words:
                     wf=WordFrequency(word)
                     #If wf is already in the vocabulary, it won't be added again. Otherwise it will be added with frequency=0 
-                    self.voc.add(wf)
+                    self.vocabulary.add(wf)
                     #Add 1 to the frequency
-                    self.voc[self.voc.index(wf)].incrFrequecy()
+                    self.vocabulary[self.vocabulary.index(wf)].incrFrequecy()
                     
-        print 'Complete vocabulary: %i unique words' % len(self.voc)
-        #On supprime les éléments en trop
-        if len(self.voc) > self.MAX_FEATURES:
-            for i in range(self.MAX_FEATURES, len(self.voc)):
-                del self.voc[i]
+        print 'Complete vocabulary: %i unique words' % len(self.vocabulary)
+        #We delete the less frequent words to keep MAX_FEATURES words as features
+        if len(self.vocabulary) > self.MAX_FEATURES:
+            for i in range(self.MAX_FEATURES, len(self.vocabulary)):
+                del self.vocabulary[i]
                 
-        print 'Pruned vocabulary: %i unique words' % len(self.voc)
+        print 'Pruned vocabulary: %i unique words' % len(self.vocabulary)
         self.time_slice_count = None
         self.tweet_count = None
         self.global_freq = None
@@ -78,8 +81,9 @@ class Corpus:
             words = self.tokenize(self.df.iloc[i]['text'])
             mention = '@' in words
             for word in set(words):
-                if self.vocabulary.get(word) is not None:
-                    row = self.vocabulary[word]
+                wf=WordFrequency(word)
+                if wf in self.vocabulary:
+                    row = self.vocabulary.index(wf)
                     column = time_slice
                     self.global_freq[row, column] = self.global_freq.item((row, column)) + 1
                     if mention:
@@ -93,7 +97,8 @@ class Corpus:
         for i in range(0, filtered_df.count(0)[0]):
             words = self.tokenize(filtered_df.iloc[i]['text'])
             for word in set(words):
-                if self.vocabulary.get(word) is not None:
+                wf=WordFrequency(word)
+                if wf in self.vocabulary:
                     word_frequency = 0
                     if tmp_vocabulary.get(word) is not None:
                         word_frequency = tmp_vocabulary.get(word)

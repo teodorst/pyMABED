@@ -4,8 +4,9 @@ import numpy as np
 import utils
 import stats
 import networkx as nx
+from indexer.bow import WordFrequency
 
-__author__ = "Adrien Guille"
+__authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
 
 
@@ -23,8 +24,8 @@ class MABED:
     def phase1(self):
         print 'Phase 1...'
         basic_events = []
-        for w in range(0, len(self.corpus.vocabulary_index)):
-            word = self.corpus.vocabulary_index[w]
+        for w in range(0, len(self.corpus.vocabulary)):
+            word = self.corpus.vocabulary[w]
             mention_freq = self.corpus.mention_freq[w, :]
             total_mention_freq = np.sum(mention_freq)
             anomaly = []
