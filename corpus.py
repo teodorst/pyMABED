@@ -30,7 +30,6 @@ class Corpus:
         self.start_date = self.df['date'].min()
         self.end_date = self.df['date'].max()
         print 'Corpus: %i tweets, spanning from %s to %s' % (self.size, self.start_date, self.end_date)
-        tmp_vocabulary = {}
         
         #Un set trié
         self.voc=SortedSet()
@@ -47,10 +46,6 @@ class Corpus:
                     self.voc[self.voc.index(wf)].incrFrequecy()
                     
         print 'Complete vocabulary: %i unique words' % len(self.voc)
-        j = 0
-        self.vocabulary = {}
-        self.vocabulary_index = []
-        tmp_list = np.sort(list(tmp_vocabulary.values()))
         #On supprime les éléments en trop
         if len(self.voc) > self.MAX_FEATURES:
             for i in range(self.MAX_FEATURES, len(self.voc)):
