@@ -99,7 +99,8 @@ class MABED:
             basic_event = basic_events[i]
             main_word = basic_event[2]
             candidates_words = self.corpus.cooccurring_words(basic_event, 10)
-            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(main_word), :]
+            wf=WordFrequency(main_word)
+            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(wf), :]
             related_words = []
             for candidate_word in candidates_words:
                 cw = WordFrequency(candidate_word)
