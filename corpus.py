@@ -118,7 +118,10 @@ class Corpus:
         freq.reverse()
         top_cooccurring_words = []
         for i in range(1, p):
-            top_cooccurring_words.append(freq[i][0])
+            try :
+                top_cooccurring_words.append(freq[i][0])
+            except:
+                break
         return top_cooccurring_words
 
     def to_date(self, time_slice):
