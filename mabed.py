@@ -19,13 +19,13 @@ class MABED:
 
     def run(self, k=10, theta=0.6, sigma=0.5):
         basic_events = self.phase1()
-        self.phase2(basic_events, k, theta, sigma)
+        return self.phase2(basic_events, k, theta, sigma)
 
     def phase1(self):
         print 'Phase 1...'
         basic_events = []
         for w in range(0, len(self.corpus.vocabulary)):
-            word = self.corpus.vocabulary[w]
+            word = self.corpus.vocabulary[w].getWord()
             mention_freq = self.corpus.mention_freq[w, :]
             total_mention_freq = np.sum(mention_freq)
             anomaly = []
@@ -102,18 +102,18 @@ class MABED:
             main_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(main_word), :]
             related_words = []
             for candidate_word in candidates_words:
-                cw=WordFrequency(candidate_word)
+                cw = WordFrequency(candidate_word)
                 candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(cw), :]
                 weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
                 if weight > theta:
                     related_words.append((candidate_word, weight))
             if len(related_words) > 1:
-                refined_event = (basic_event[0], basic_event[1], main_word, related_words)
+                refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
                 if self.update_graphs(refined_event, sigma):
                     refined_events.append(refined_event)
                     unique_events += 1
             i += 1
-        self.merge_redundant_events(refined_events)
+        return self.merge_redundant_events(refined_events)
 
     def anomaly(self, time_slice, observation, total_mention_freq):
         expectation = float(self.corpus.tweet_count[time_slice]) * (float(total_mention_freq)/(float(self.corpus.size)))
@@ -121,7 +121,8 @@ class MABED:
 
     def update_graphs(self, event, sigma):
         redundant = False
-        main_word = event[2].getWord()
+        main_word = event[2]
+        print event
         if self.event_graph.has_node(main_word):
             for related_word, weight in event[3]:
                 if self.event_graph.has_edge(main_word, related_word):
@@ -133,9 +134,9 @@ class MABED:
                         self.redundancy_graph.add_edge(main_word, related_word)
                         redundant = True
         if not redundant:
-            self.event_graph.add_node(event[2].getWord(), interval=event[1], main_term=True)
+            self.event_graph.add_node(event[2], interval=event[1], main_term=True)
             for related_word, weight in event[3]:
-                self.event_graph.add_edge(related_word, event[2].getWord(), weight=weight)
+                self.event_graph.add_edge(related_word, event[2], weight=weight)
         return not redundant
 
     def merge_redundant_events(self, events):
@@ -150,9 +151,10 @@ class MABED:
                 if main_word in component:
                     main_term = ', '.join(component)
                     break
-            final_event = (event[0], event[1], main_term, event[3])
+            final_event = (event[0], event[1], main_term, event[3], event[4])
             final_events.append(final_event)
             self.print_event(final_event)
+        return final_events
 
     def print_event(self, event):
         related_words = []
@@ -167,9 +169,9 @@ if __name__ == '__main__':
     utils.save_corpus(my_corpus, 'corpus/messages3.pickle')
     '''
     my_corpus = Corpus('input/messages1.csv')
-    my_corpus.discretize(30)
     print 'Stop words:', my_corpus.stop_words
     print 'Corpus: %i tweets, spanning from %s to %s' % (my_corpus.size, my_corpus.start_date, my_corpus.end_date)
     print 'Vocabulary: %i unique tokens' % len(my_corpus.vocabulary)
+    my_corpus.discretize(30)
     mabed = MABED(my_corpus)
     mabed.run(k=10, theta=0.6, sigma=0.6)
