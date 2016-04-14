@@ -6,8 +6,11 @@ import numpy as np
 import re
 import string
 from datetime import timedelta
+#To sort words according to their frequency
+from sortedcontainers import  SortedSet
+from indexer.bow import WordFrequency
 
-__author__ = "Adrien Guille"
+__authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
 
 
@@ -28,30 +31,32 @@ class Corpus:
         self.end_date = self.df['date'].max()
         print 'Corpus: %i tweets, spanning from %s to %s' % (self.size, self.start_date, self.end_date)
         tmp_vocabulary = {}
+        
+        #Un set trié
+        self.voc=SortedSet()
         for i in range(0, self.size):
             text = re.sub(r'(?:https?\://)\S+', '', self.df.iloc[i]['text'])
             self.df.loc[i, 'text'] = text
             words = self.tokenize(text)
             for word in set(words):
-                word_frequency = 0
-                if tmp_vocabulary.get(word):
-                    word_frequency = tmp_vocabulary.get(word)
-                word_frequency += 1
-                tmp_vocabulary[word] = word_frequency
-        print 'Complete vocabulary: %i unique words' % len(tmp_vocabulary)
+                if word not in self.stop_words:
+                    wf=WordFrequency(word)
+                    #If wf is already in the vocabulary, it won't be added again. Otherwise it will be added with frequency=0 
+                    self.voc.add(wf)
+                    #Add 1 to the frequency
+                    self.voc[self.voc.index(wf)].incrFrequecy()
+                    
+        print 'Complete vocabulary: %i unique words' % len(self.voc)
         j = 0
         self.vocabulary = {}
         self.vocabulary_index = []
         tmp_list = np.sort(list(tmp_vocabulary.values()))
-        if len(tmp_vocabulary) > self.MAX_FEATURES:
-            min_absolute_frequency = tmp_list[tmp_list.size-self.MAX_FEATURES]
-        for word, frequency in tmp_vocabulary.iteritems():
-            if frequency > min_absolute_frequency and float(frequency)/float(self.size) < max_relative_frequency:
-                if word not in self.stop_words:
-                    self.vocabulary[word] = j
-                    self.vocabulary_index.append(word)
-                    j += 1
-        print 'Pruned vocabulary: %i unique words' % len(self.vocabulary)
+        #On supprime les éléments en trop
+        if len(self.voc) > self.MAX_FEATURES:
+            for i in range(self.MAX_FEATURES, len(self.voc)):
+                del self.voc[i]
+                
+        print 'Pruned vocabulary: %i unique words' % len(self.voc)
         self.time_slice_count = None
         self.tweet_count = None
         self.global_freq = None
