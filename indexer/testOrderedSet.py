@@ -43,13 +43,13 @@ w4=WordFrequency("le", 0)
 print w4, " in set ? ",w4 in wordSet, "position : ", wordSet.index(w4)
 w4=WordFrequency("le", 25)
 print w4, " in set ? ",w4 in wordSet, "position : ", wordSet.index(w4)
-wordSet[wordSet.index(w4)].incrFrequecy()
+wordSet[wordSet.index(w4)].increment_frequency()
 
 
 
 w4=WordFrequency("le", 25)
 wordSet.add(w4)
-wordSet[wordSet.index(w4)].incrFrequecy()
+wordSet[wordSet.index(w4)].increment_frequency()
 
 _set="Set : "
 for i in range(len(wordSet)):
@@ -58,7 +58,7 @@ print _set+"\n"
 
 w4=WordFrequency("O", 0)
 wordSet.add(w4)
-wordSet[wordSet.index(w4)].incrFrequecy()
+wordSet[wordSet.index(w4)].increment_frequency()
 
 _set="Set : "
 for i in range(len(wordSet)):
