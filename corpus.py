@@ -1,16 +1,12 @@
 # coding: utf-8
 import nltk
 from nltk.corpus import stopwords
+from nltk import FreqDist
 import pandas
 import numpy as np
 import re
 import string
 from datetime import timedelta
-from sortedcontainers import SortedSet
-from indexer.bow import WordFrequency
-import timeit
-import matplotlib.pyplot as plt
-
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -22,56 +18,35 @@ class Corpus:
     LANGUAGE = 'english'
 
     def __init__(self, source_file_path, min_absolute_frequency=4, max_relative_frequency=0.5):
+        # load stop words
         self.stop_words = self.TWITTER_TOKENS
         self.stop_words.extend(list(string.punctuation))
         self.stop_words.extend(stopwords.words(self.LANGUAGE))
+        self.stop_words = set(self.stop_words)
+        print '   Stop words:', self.stop_words
+
+        # load corpus
         self.df = pandas.read_csv(source_file_path, sep='\t', encoding='utf-8')
         self.df['date'] = pandas.to_datetime(self.df.date)
         self.size = self.df.count(0)[0]
         self.start_date = self.df['date'].min()
         self.end_date = self.df['date'].max()
+        print '   Corpus: %i tweets, spanning from %s to %s' % (self.size,
+                                                                self.start_date,
+                                                                self.end_date)
 
-        # a SortedSet of WordFrequency objects (i.e. (words, frequency) tuples)
-        self.vocabulary = SortedSet()
-
-        voc_size = []
-        corpus_size = []
-
+        # extract features
+        all_tweets = []
         for i in range(0, self.size):
-            # remove URLs
-            text = re.sub(r'(?:https?\://)\S+', '', self.df.iloc[i]['text'])
-            self.df.loc[i, 'text'] = text
-            words = self.tokenize(text)
-
-            # log processing time
-            if i % 100 == 0:
-                if i == 0:
-                    start_time = timeit.default_timer()
-                else:
-                    voc_size.append(len(self.vocabulary))
-                    corpus_size.append(i)
-                    elapsed = timeit.default_timer() - start_time
-                    print "100 rows tokenized in %s seconds (vocabulary size: %d)" % (str(elapsed), len(self.vocabulary))
-                    start_time = timeit.default_timer()
-
-            for word in set(words):
-                # remove stop words
-                if word not in self.stop_words:
-                    wf = WordFrequency(word)
-                    # either insert a new word in the vocabulary, or update its frequency
-                    self.vocabulary.add(wf)
-                    # increment frequency
-                    self.vocabulary[self.vocabulary.index(wf)].increment_frequency()
-                    
-        # prune vocabulary
-        if len(self.vocabulary) > self.MAX_FEATURES:
-            for i in range(self.MAX_FEATURES, len(self.vocabulary)):
-                del self.vocabulary[len(self.vocabulary) - 1]
-
-        plt.clf()
-        plt.plot(corpus_size)
-        plt.plot(voc_size)
-        plt.savefig('indexing.png')
+            all_tweets.extend(self.tokenize(self.df.iloc[i]['text']))
+        freq_distribution = FreqDist(all_tweets)
+        self.vocabulary = {}
+        j = 0
+        for word, frequency in freq_distribution.most_common(self.MAX_FEATURES):
+            if word not in self.stop_words:
+                self.vocabulary[word] = j
+                j += 1
+        print '   Vocabulary: %i unique tokens' % len(self.vocabulary)
 
         self.time_slice_count = None
         self.tweet_count = None
@@ -94,7 +69,6 @@ class Corpus:
 
         # add a new column in the data frame
         self.df['time_slice'] = 0
-        print 'Time-slices: %i' % self.time_slice_count
 
         # iterate through the corpus
         for i in range(0, self.size):
@@ -107,9 +81,8 @@ class Corpus:
             words = self.tokenize(self.df.iloc[i]['text'])
             mention = '@' in words
             for word in set(words):
-                wf = WordFrequency(word)
-                if wf in self.vocabulary:
-                    row = self.vocabulary.index(wf)
+                if self.vocabulary.get(word) is not None:
+                    row = self.vocabulary[word]
                     column = time_slice
                     self.global_freq[row, column] = self.global_freq.item((row, column)) + 1
                     if mention:
@@ -122,33 +95,20 @@ class Corpus:
         # identify tweets related to the event
         filtered_df_0 = self.df.loc[self.df['time_slice'].isin(range(event[1][0], event[1][1]))]
         filtered_df = filtered_df_0.loc[filtered_df_0['text'].str.contains(main_word)]
-
-        # extract the vocabulary
-        tmp_vocabulary = {}
+        related_tweets = []
         for i in range(0, filtered_df.count(0)[0]):
-            words = self.tokenize(filtered_df.iloc[i]['text'])
-            for word in set(words):
-                wf = WordFrequency(word)
-                if wf in self.vocabulary:
-                    word_frequency = 0
-                    if tmp_vocabulary.get(word) is not None:
-                        word_frequency = tmp_vocabulary.get(word)
-                    word_frequency += 1
-                    tmp_vocabulary[word] = word_frequency
-        freq = []
-        for word, frequency in tmp_vocabulary.iteritems():
-            freq.append((word, frequency))
-        freq.sort(key=lambda tup: tup[1])
-        freq.reverse()
-        top_cooccurring_words = []
+            related_tweets.extend(self.tokenize(filtered_df.iloc[i]['text']))
+        freq_distribution = FreqDist(related_tweets)
 
-        # return the most frequent words
-        for i in range(1, p):
-            try:
-                top_cooccurring_words.append(freq[i][0])
-            except:
-                break
-        return top_cooccurring_words
+        # compute word frequency
+        top_cooccurring_words = []
+        for word, frequency in freq_distribution.most_common(self.MAX_FEATURES):
+            if word != main_word and word not in self.stop_words:
+                if self.vocabulary.get(word) is not None:
+                    top_cooccurring_words.append(word)
+                    if len(top_cooccurring_words) == p:
+                        # return the p words that co-occur the most with the main word
+                        return top_cooccurring_words
 
     def to_date(self, time_slice):
         a_date = self.start_date + timedelta(minutes=time_slice*self.time_slice_length)
@@ -156,13 +116,14 @@ class Corpus:
 
     def print_vocabulary(self):
         for entry in self.vocabulary:
-            print entry
+            print entry.get_word()
 
     @staticmethod
     def tokenize(text):
-        tokens = nltk.wordpunct_tokenize(text)
-        text = nltk.Text(tokens)
-        words = [w.lower() for w in text]
+        text_without_url = re.sub(r'(?:https?\://)\S+', '', text)
+        tokens = nltk.wordpunct_tokenize(text_without_url)
+        clean_text = nltk.Text(tokens)
+        words = [w.lower() for w in clean_text]
         return words
 
 if __name__ == '__main__':

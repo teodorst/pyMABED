@@ -1,10 +1,9 @@
 # coding: utf-8
 from corpus import Corpus
 import numpy as np
-import utils
 import stats
 import networkx as nx
-from indexer.bow import WordFrequency
+import timeit
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -16,6 +15,7 @@ class MABED:
         self.corpus = corpus
         self.event_graph = None
         self.redundancy_graph = None
+        self.events = None
 
     def run(self, k=10, theta=0.6, sigma=0.5):
         basic_events = self.phase1()
@@ -26,9 +26,8 @@ class MABED:
         basic_events = []
 
         # iterate through the vocabulary
-        for w in range(0, len(self.corpus.vocabulary)):
-            word = self.corpus.vocabulary[w].get_word()
-            mention_freq = self.corpus.mention_freq[w, :]
+        for word, word_index in self.corpus.vocabulary.iteritems():
+            mention_freq = self.corpus.mention_freq[word_index, :]
             total_mention_freq = np.sum(mention_freq)
 
             # compute the time-series that describes the evolution of mention-anomaly
@@ -112,14 +111,12 @@ class MABED:
             basic_event = basic_events[i]
             main_word = basic_event[2]
             candidates_words = self.corpus.cooccurring_words(basic_event, 10)
-            wf = WordFrequency(main_word)
-            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(wf), :]
+            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary[main_word], :]
             related_words = []
 
             # identify candidate words based on co-occurrence
             for candidate_word in candidates_words:
-                cw = WordFrequency(candidate_word)
-                candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary.index(cw), :]
+                candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :]
 
                 # compute correlation and filter according to theta
                 weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
@@ -133,8 +130,8 @@ class MABED:
                     refined_events.append(refined_event)
                     unique_events += 1
             i += 1
-        # merge redundant events and return the result
-        return self.merge_redundant_events(refined_events)
+        # merge redundant events and save the result
+        self.events = self.merge_redundant_events(refined_events)
 
     def anomaly(self, time_slice, observation, total_mention_freq):
         # compute the expected frequency of the given word at this time-slice
@@ -163,11 +160,13 @@ class MABED:
         return not redundant
 
     def merge_redundant_events(self, events):
-        # identify the connected components in the redundancy graph
+        # compute the connected components in the redundancy graph
         components = []
         for c in nx.connected_components(self.redundancy_graph):
             components.append(c)
         final_events = []
+
+        # merge redundant events
         for event in events:
             main_word = event[2]
             main_term = main_word
@@ -184,18 +183,30 @@ class MABED:
         related_words = []
         for related_word, weight in event[3]:
             related_words.append(related_word+'('+str("{0:.2f}".format(weight))+')')
-        print '%s - %s: %s (%s)' % (str(self.corpus.to_date(event[1][0])), str(self.corpus.to_date(event[1][1])), event[2], ', '.join(related_words))
+        print '   %s - %s: %s (%s)' % (str(self.corpus.to_date(event[1][0])),
+                                       str(self.corpus.to_date(event[1][1])),
+                                       event[2],
+                                       ', '.join(related_words))
 
 if __name__ == '__main__':
-    '''
+    print 'Loading corpus...'
+    start_time = timeit.default_timer()
     my_corpus = Corpus('input/messages3.csv')
-    my_corpus.discretize(30)
-    utils.save_corpus(my_corpus, 'corpus/messages3.pickle')
-    '''
-    my_corpus = Corpus('input/messages2.csv')
-    print 'Stop words:', my_corpus.stop_words
-    print 'Corpus: %i tweets, spanning from %s to %s' % (my_corpus.size, my_corpus.start_date, my_corpus.end_date)
-    print 'Vocabulary: %i unique tokens' % len(my_corpus.vocabulary)
-    my_corpus.discretize(30)
+    elapsed = timeit.default_timer() - start_time
+    print 'Corpus loaded in %f seconds.' % elapsed
+
+    time_slice_length = 30
+    print 'Partitioning tweets into %d-minute time-slices...' % time_slice_length
+    start_time = timeit.default_timer()
+    my_corpus.discretize(time_slice_length)
+    print '   Time-slices: %i' % my_corpus.time_slice_count
+    elapsed = timeit.default_timer() - start_time
+    print 'Partitioning done in %f seconds.' % elapsed
+
+    print 'Running MABED...'
+    start_time = timeit.default_timer()
     mabed = MABED(my_corpus)
-    mabed.run(k=10, theta=0.6, sigma=0.6)
+    k = 10
+    mabed.run(k=k, theta=0.6, sigma=0.6)
+    elapsed = timeit.default_timer() - start_time
+    print 'Top %d events detected in %f seconds.' % (k, elapsed)
