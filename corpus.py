@@ -67,8 +67,8 @@ class Corpus:
         self.global_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         self.mention_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
 
-        # add a new column in the data frame
-        self.df['time_slice'] = 0
+        # prepare a new column
+        time_slices = []
 
         # iterate through the corpus
         for i in range(0, self.size):
@@ -76,7 +76,7 @@ class Corpus:
             time_delta = (tweet_date - self.start_date)
             time_delta = time_delta.total_seconds()/60
             time_slice = int(time_delta/time_slice_length)
-            self.df.loc[i, 'time_slice'] = time_slice
+            time_slices.append(time_slice)
             self.tweet_count[time_slice] = self.tweet_count.item(time_slice) + 1
             words = self.tokenize(self.df.iloc[i]['text'])
             mention = '@' in words
@@ -87,6 +87,9 @@ class Corpus:
                     self.global_freq[row, column] = self.global_freq.item((row, column)) + 1
                     if mention:
                         self.mention_freq[row, column] = self.mention_freq.item((row, column)) + 1
+
+        # add the new column in the data frame
+        self.df['time_slice'] = np.array(time_slices)
 
     def cooccurring_words(self, event, p):
         # remove eventual parenthesis from the main word to prevent a bug in pandas
