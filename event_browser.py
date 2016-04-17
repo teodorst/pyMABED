@@ -11,7 +11,7 @@ __email__ = "adrien.guille@univ-lyon2.fr"
 
 print 'Loading corpus...'
 start_time = timeit.default_timer()
-my_corpus = Corpus('input/messages3.csv')
+my_corpus = Corpus('input/messages1.csv')
 elapsed = timeit.default_timer() - start_time
 print 'Corpus loaded in %f seconds.' % elapsed
 
@@ -39,7 +39,7 @@ event_descriptions = []
 impact_data = []
 formatted_dates = []
 for i in range(0, mabed.corpus.time_slice_count):
-    formatted_dates.append(str(mabed.corpus.to_date(i)))
+    formatted_dates.append(long(time.mktime(mabed.corpus.to_date(i).timetuple()))*1000)
 for event in mabed.events:
     mag = event[0]
     main_term = event[2]
