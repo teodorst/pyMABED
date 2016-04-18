@@ -9,9 +9,7 @@
     <link href="../static/css/nv.d3.css" rel="stylesheet" type="text/css">
     <script src="../static/js/d3.min.js" charset="utf-8"></script>
     <script src="../static/js/nv.d3.min.js"></script>
-    <style>
-
-    </style>
+    <title>MABED: Mention-anomaly-based Event Detection and Tracking in Twitter</title>
 </head>
 <body>
     <div id="navigation">
@@ -53,7 +51,9 @@
 </body>
 <script>
     $(document).ready(function() {
-        $('#events').DataTable();
+        $('#events').dataTable( {
+            "order": [[ 0, 'desc' ]]
+        } );
     });
 </script>
 <script>
