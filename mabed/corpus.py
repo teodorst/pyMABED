@@ -1,11 +1,13 @@
 # coding: utf-8
-import nltk
-from nltk import FreqDist
-import pandas
-import numpy as np
 import re
 import string
 from datetime import timedelta
+
+import nltk
+import numpy as np
+import pandas
+from nltk import FreqDist
+
 import utils
 
 __authors__ = "Adrien Guille, Nicolas Dugué"

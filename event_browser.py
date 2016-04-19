@@ -1,10 +1,11 @@
 # coding: utf-8
-from mabed import MABED
-from corpus import Corpus
-from flask import Flask, render_template
 import time
 import timeit
-import utils
+
+from flask import Flask, render_template
+
+from corpus import Corpus
+from mabed import MABED, utils
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"

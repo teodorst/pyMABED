@@ -1,9 +1,11 @@
 # coding: utf-8
-from corpus import Corpus
-import numpy as np
-import stats
-import networkx as nx
 import timeit
+
+import networkx as nx
+import numpy as np
+
+import stats
+from corpus import Corpus
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
