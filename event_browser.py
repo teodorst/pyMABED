@@ -1,11 +1,9 @@
 # coding: utf-8
 import time
 import timeit
-
 from flask import Flask, render_template
-
-from corpus import Corpus
-from mabed import MABED, utils
+from mabed.corpus import Corpus
+from mabed.mabed import MABED
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -23,7 +21,6 @@ my_corpus.discretize(time_slice_length)
 print '   Time-slices: %i' % my_corpus.time_slice_count
 elapsed = timeit.default_timer() - start_time
 print 'Partitioning done in %f seconds.' % elapsed
-utils.save_corpus(my_corpus, 'corpus/all_messages.pickle')
 
 print 'Running MABED...'
 k = 10
