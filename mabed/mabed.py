@@ -48,51 +48,19 @@ class MABED:
         return basic_events
 
     def maximum_contiguous_subsequence_sum(self, anomaly):
-        interval_list = []
-        l_list = []
-        r_list = []
-        positive_anomaly = []
+        max_ending_here = max_so_far = 0
+        a = b = 0
+        accumulated_sum = 0
         for i in range(0, self.corpus.time_slice_count):
-            pa = anomaly[i]
-            if pa < 0:
-                pa = 0
-            positive_anomaly.append(pa)
-            if anomaly[i] > 0:
-                k = len(interval_list)
-                l_k = 0
-                r_k = np.sum(anomaly[:i])
-                if i > 0:
-                    l_k = np.sum(anomaly[:i-1])
-                j = 0
-                found_j = False
-                for l in range(k, 0, -1):
-                    if l_list[l-1] < l_k:
-                        found_j = True
-                        j = l-1
-                if found_j and r_list[j] < r_k:
-                    interval_k = (interval_list[j][0], i)
-                    for p in range(j, k+1):
-                        if len(interval_list) > 0:
-                            interval_list.pop()
-                        if len(l_list) > 0:
-                            l_list.pop()
-                        if len(r_list) > 0:
-                            r_list.pop()
-                    interval_list.append(interval_k)
-                    l_list.append(np.sum(anomaly[:interval_k[0]-1]))
-                    r_list.append(np.sum(anomaly[:interval_k[1]]))
-                else:
-                    interval_list.append((i, i))
-                    l_list.append(l_k)
-                    r_list.append(r_k)
-        if len(interval_list) > 0:
-            interval_max = interval_list[0]
-            for (a, b) in interval_list:
-                if np.sum(anomaly[a:b]) > np.sum(anomaly[interval_max[0]:interval_max[1]]):
-                    interval_max = (a, b)
-            return interval_max
-        else:
-            return None
+            max_ending_here = max(0, max_ending_here + anomaly[i])
+            accumulated_sum += anomaly[i]
+            if accumulated_sum < 0:
+                a = i + 1
+            if max_ending_here > max_so_far:
+                max_so_far = max_ending_here
+                b = i
+        max_interval = (a, b)
+        return max_interval
 
     def phase2(self, basic_events, k=10, theta=0.7, sigma=0.5):
         print 'Phase 2...'
@@ -112,25 +80,26 @@ class MABED:
         while unique_events < k and i < len(basic_events):
             basic_event = basic_events[i]
             main_word = basic_event[2]
-            candidates_words = self.corpus.cooccurring_words(basic_event, 10)
+            candidate_words = self.corpus.cooccurring_words(basic_event, 10)
             main_word_freq = self.corpus.global_freq[self.corpus.vocabulary[main_word], :]
             related_words = []
 
             # identify candidate words based on co-occurrence
-            for candidate_word in candidates_words:
-                candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :]
+            if candidate_words is not None:
+                for candidate_word in candidate_words:
+                    candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :]
 
-                # compute correlation and filter according to theta
-                weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
-                if weight > theta:
-                    related_words.append((candidate_word, weight))
+                    # compute correlation and filter according to theta
+                    weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
+                    if weight > theta:
+                        related_words.append((candidate_word, weight))
 
-            if len(related_words) > 1:
-                refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
-                # check if this event is distinct from those already stored in the event graph
-                if self.update_graphs(refined_event, sigma):
-                    refined_events.append(refined_event)
-                    unique_events += 1
+                if len(related_words) > 1:
+                    refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
+                    # check if this event is distinct from those already stored in the event graph
+                    if self.update_graphs(refined_event, sigma):
+                        refined_events.append(refined_event)
+                        unique_events += 1
             i += 1
         # merge redundant events and save the result
         self.events = self.merge_redundant_events(refined_events)
