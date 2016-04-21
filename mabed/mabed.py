@@ -47,8 +47,8 @@ class MABED:
                 neg_anomaly=map(lambda x: -x, anomaly)
                 interval_min = self.maximum_contiguous_subsequence_sum(neg_anomaly)
                 if interval_min is not None:
-                    mag = np.sum(neg_anomaly[interval_max[0]:interval_max[1]])
-                    basic_event = (mag, interval_max, word, anomaly, "Negative")
+                    mag = np.sum(neg_anomaly[interval_min[0]:interval_min[1]])
+                    basic_event = (mag, interval_min, word, anomaly, "Negative")
                     basic_events.append(basic_event)
                 
 
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     print 'Running MABED...'
     start_time = timeit.default_timer()
     mabed = MABED(my_corpus)
-    k = 10
+    k = 20
     mabed.run(k=k, theta=0.6, sigma=0.6)
     elapsed = timeit.default_timer() - start_time
     print 'Top %d events detected in %f seconds.' % (k, elapsed)
