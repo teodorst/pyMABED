@@ -4,13 +4,14 @@ import timeit
 from flask import Flask, render_template
 from mabed.corpus import Corpus
 from mabed.mabed import MABED
+from mabed import utils
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
 
 print 'Loading corpus...'
 start_time = timeit.default_timer()
-my_corpus = Corpus('input/all_messages.csv')
+my_corpus = Corpus('input/cats.csv')
 elapsed = timeit.default_timer() - start_time
 print 'Corpus loaded in %f seconds.' % elapsed
 

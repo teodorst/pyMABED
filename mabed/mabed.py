@@ -1,9 +1,7 @@
 # coding: utf-8
 import timeit
-
 import networkx as nx
 import numpy as np
-
 import stats
 from corpus import Corpus
 
@@ -37,29 +35,27 @@ class MABED:
             for i in range(0, self.corpus.time_slice_count):
                 anomaly.append(self.anomaly(i, mention_freq[i], total_mention_freq))
 
-            # identify the interval that maximizes the magnitude of impact
-            interval_max = self.maximum_contiguous_subsequence_sum(anomaly)
-            if interval_max is not None:
-                mag = np.sum(anomaly[interval_max[0]:interval_max[1]])
-                basic_event = (mag, interval_max, word, anomaly)
-                basic_events.append(basic_event)
-                
+                # identify the interval that maximizes the magnitude of impact
+                interval_max = self.maximum_contiguous_subsequence_sum(anomaly)
+                if interval_max is not None:
+                    mag = np.sum(anomaly[interval_max[0]:interval_max[1]])
+                    basic_event = (mag, interval_max, word, anomaly)
+                    basic_events.append(basic_event)
 
         print 'Phase 1: %d events' % len(basic_events)
         return basic_events
 
     def maximum_contiguous_subsequence_sum(self, anomaly):
         max_ending_here = max_so_far = 0
-        a = b = 0
-        a_ending_here=0
+        a = b = a_ending_here = 0
         for idx, ano in enumerate(anomaly):
             max_ending_here = max(0, max_ending_here + ano)
-            if max_ending_here ==0:
-                #a new bigger sum may start from here
-                a_ending_here=idx
+            if max_ending_here == 0:
+                # a new bigger sum may start from here
+                a_ending_here = idx
             if max_ending_here > max_so_far:
-                #The new sum from a_ending_here to idx is bigger !
-                a=a_ending_here+1
+                # the new sum from a_ending_here to idx is bigger !
+                a = a_ending_here+1
                 max_so_far = max_ending_here
                 b = idx
         max_interval = (a, b)
@@ -70,7 +66,6 @@ class MABED:
 
         # sort the events detected during phase 1 according to their magnitude of impact
         basic_events.sort(key=lambda tup: tup[0], reverse=True)
-        #basic_events.reverse()
 
         # create the event graph (directed) and the redundancy graph (undirected)
         self.event_graph = nx.DiGraph(name='Event graph')
@@ -158,9 +153,9 @@ class MABED:
         for related_word, weight in event[3]:
             related_words.append(related_word+'('+str("{0:.2f}".format(weight))+')')
         print '%s - %s: %s (%s)' % (str(self.corpus.to_date(event[1][0])),
-                                       str(self.corpus.to_date(event[1][1])),
-                                       event[2],
-                                       ', '.join(related_words))
+                                    str(self.corpus.to_date(event[1][1])),
+                                    event[2],
+                                    ', '.join(related_words))
 
 if __name__ == '__main__':
     print 'Loading corpus...'
@@ -180,7 +175,7 @@ if __name__ == '__main__':
     print 'Running MABED...'
     start_time = timeit.default_timer()
     mabed = MABED(my_corpus)
-    k = 20
-    mabed.run(k=k, theta=0.6, sigma=0.6)
+    top_k = 20
+    mabed.run(k=top_k, theta=0.6, sigma=0.6)
     elapsed = timeit.default_timer() - start_time
     print 'Top %d events detected in %f seconds.' % (k, elapsed)

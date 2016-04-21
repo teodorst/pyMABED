@@ -18,11 +18,12 @@ class Corpus:
     MAX_FEATURES = 5000
     TWITTER_TOKENS = ['rt', 'via', '@', '..', '...']
     STOPWORDS_FILE = '../stopwords_en.txt'
+    PUNCTUATION = list(string.punctuation)
 
     def __init__(self, source_file_path, min_absolute_frequency=4, max_relative_frequency=0.5):
         # load stop words
         self.stop_words = self.TWITTER_TOKENS
-        self.stop_words.extend(list(string.punctuation))
+        self.stop_words.extend(self.PUNCTUATION)
         self.stop_words.extend(utils.load_stopwords(self.STOPWORDS_FILE))
         self.stop_words = set(self.stop_words)
         print '   Stop words:', self.stop_words
@@ -94,8 +95,8 @@ class Corpus:
         self.df['time_slice'] = np.array(time_slices)
 
     def cooccurring_words(self, event, p):
-        # remove eventual parenthesis from the main word to prevent a bug in pandas
-        main_word = event[2].replace(')', '').replace('(', '')
+        # remove characters that could be interpreted as regular expressions by pandas
+        main_word = event[2].replace(')', '').replace('(', '').replace('?', '').replace('*', '').replace('+', '')
 
         # identify tweets related to the event
         filtered_df_0 = self.df.loc[self.df['time_slice'].isin(range(event[1][0], event[1][1]))]
