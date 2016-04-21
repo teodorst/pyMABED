@@ -17,7 +17,7 @@ __email__ = "adrien.guille@univ-lyon2.fr"
 class Corpus:
     MAX_FEATURES = 5000
     TWITTER_TOKENS = ['rt', 'via', '@', '..', '...']
-    STOPWORDS_FILE = 'stopwords_en.txt'
+    STOPWORDS_FILE = '../stopwords_en.txt'
 
     def __init__(self, source_file_path, min_absolute_frequency=4, max_relative_frequency=0.5):
         # load stop words

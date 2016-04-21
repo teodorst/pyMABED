@@ -41,8 +41,16 @@ class MABED:
             interval_max = self.maximum_contiguous_subsequence_sum(anomaly)
             if interval_max is not None:
                 mag = np.sum(anomaly[interval_max[0]:interval_max[1]])
-                basic_event = (mag, interval_max, word, anomaly)
+                basic_event = (mag, interval_max, word, anomaly, "Positive")
                 basic_events.append(basic_event)
+                
+                neg_anomaly=map(lambda x: -x, anomaly)
+                interval_min = self.maximum_contiguous_subsequence_sum(neg_anomaly)
+                if interval_min is not None:
+                    mag = np.sum(neg_anomaly[interval_max[0]:interval_max[1]])
+                    basic_event = (mag, interval_max, word, anomaly, "Negative")
+                    basic_events.append(basic_event)
+                
 
         print 'Phase 1: %d events' % len(basic_events)
         return basic_events
@@ -50,15 +58,17 @@ class MABED:
     def maximum_contiguous_subsequence_sum(self, anomaly):
         max_ending_here = max_so_far = 0
         a = b = 0
-        accumulated_sum = 0
-        for i in range(0, self.corpus.time_slice_count):
-            max_ending_here = max(0, max_ending_here + anomaly[i])
-            accumulated_sum += anomaly[i]
-            if accumulated_sum < 0:
-                a = i + 1
+        a_ending_here=0
+        for idx, ano in enumerate(anomaly):
+            max_ending_here = max(0, max_ending_here + ano)
+            if max_ending_here ==0:
+                #a new bigger sum may start from here
+                a_ending_here=idx
             if max_ending_here > max_so_far:
+                #The new sum from a_ending_here to idx is bigger !
+                a=a_ending_here+1
                 max_so_far = max_ending_here
-                b = i
+                b = idx
         max_interval = (a, b)
         return max_interval
 
@@ -66,8 +76,8 @@ class MABED:
         print 'Phase 2...'
 
         # sort the events detected during phase 1 according to their magnitude of impact
-        basic_events.sort(key=lambda tup: tup[0])
-        basic_events.reverse()
+        basic_events.sort(key=lambda tup: tup[0], reverse=True)
+        #basic_events.reverse()
 
         # create the event graph (directed) and the redundancy graph (undirected)
         self.event_graph = nx.DiGraph(name='Event graph')
@@ -95,7 +105,7 @@ class MABED:
                         related_words.append((candidate_word, weight))
 
                 if len(related_words) > 1:
-                    refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
+                    refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3], basic_event[4])
                     # check if this event is distinct from those already stored in the event graph
                     if self.update_graphs(refined_event, sigma):
                         refined_events.append(refined_event)
@@ -145,7 +155,7 @@ class MABED:
                 if main_word in component:
                     main_term = ', '.join(component)
                     break
-            final_event = (event[0], event[1], main_term, event[3], event[4])
+            final_event = (event[0], event[1], main_term, event[3], event[4], event[5])
             final_events.append(final_event)
             self.print_event(final_event)
         return final_events
@@ -154,7 +164,7 @@ class MABED:
         related_words = []
         for related_word, weight in event[3]:
             related_words.append(related_word+'('+str("{0:.2f}".format(weight))+')')
-        print '   %s - %s: %s (%s)' % (str(self.corpus.to_date(event[1][0])),
+        print '%s event :   %s - %s: %s (%s)' % (event[5], str(self.corpus.to_date(event[1][0])),
                                        str(self.corpus.to_date(event[1][1])),
                                        event[2],
                                        ', '.join(related_words))
@@ -162,7 +172,7 @@ class MABED:
 if __name__ == '__main__':
     print 'Loading corpus...'
     start_time = timeit.default_timer()
-    my_corpus = Corpus('input/messages3.csv')
+    my_corpus = Corpus('../input/messages1.csv')
     elapsed = timeit.default_timer() - start_time
     print 'Corpus loaded in %f seconds.' % elapsed
 
