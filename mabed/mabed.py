@@ -40,8 +40,10 @@ class MABED:
             # identify the interval that maximizes the magnitude of impact
             interval_max = self.maximum_contiguous_subsequence_sum(anomaly)
             if interval_max is not None:
+                neg_anomaly=map(lambda x: -x, anomaly)
+                interval_min = self.maximum_contiguous_subsequence_sum(neg_anomaly)
                 mag = np.sum(anomaly[interval_max[0]:interval_max[1]])
-                basic_event = (mag, interval_max, word, anomaly)
+                basic_event = (mag, interval_max, word, anomaly, interval_min )
                 basic_events.append(basic_event)
                 
 
@@ -98,7 +100,7 @@ class MABED:
                         related_words.append((candidate_word, weight))
 
                 if len(related_words) > 1:
-                    refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
+                    refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3], basic_event[4])
                     # check if this event is distinct from those already stored in the event graph
                     if self.update_graphs(refined_event, sigma):
                         refined_events.append(refined_event)
@@ -148,7 +150,7 @@ class MABED:
                 if main_word in component:
                     main_term = ', '.join(component)
                     break
-            final_event = (event[0], event[1], main_term, event[3], event[4])
+            final_event = (event[0], event[1], main_term, event[3], event[4], event[5])
             final_events.append(final_event)
             self.print_event(final_event)
         return final_events
@@ -157,15 +159,16 @@ class MABED:
         related_words = []
         for related_word, weight in event[3]:
             related_words.append(related_word+'('+str("{0:.2f}".format(weight))+')')
-        print '%s - %s: %s (%s)' % (str(self.corpus.to_date(event[1][0])),
+        print ' %s - %s: %s (%s), less present in %s: %s ' % ( str(self.corpus.to_date(event[1][0])),
                                        str(self.corpus.to_date(event[1][1])),
                                        event[2],
-                                       ', '.join(related_words))
+                                       ', '.join(related_words), str(self.corpus.to_date(event[5][0])),
+                                       str(self.corpus.to_date(event[5][1])))
 
 if __name__ == '__main__':
     print 'Loading corpus...'
     start_time = timeit.default_timer()
-    my_corpus = Corpus('../input/messages1.csv')
+    my_corpus = Corpus('../input/messages2.csv')
     elapsed = timeit.default_timer() - start_time
     print 'Corpus loaded in %f seconds.' % elapsed
 
