@@ -2,6 +2,7 @@
 import re
 import string
 from datetime import timedelta
+from multiprocessing import cpu_count, Pool
 
 import numpy as np
 import pandas
@@ -70,22 +71,39 @@ class Corpus:
         # compute the total number of time-slices
         time_delta = (self.end_date - self.start_date)
         time_delta = time_delta.total_seconds()/60
-        self.time_slice_count = int(time_delta/float(time_slice_length)) + 1
+        self.time_slice_count = int(time_delta // self.time_slice_length) + 1
 
         # initialize data structures
         self.tweet_count = np.zeros(self.time_slice_count, dtype=np.int)
         self.global_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         self.mention_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
 
-        # prepare a new column
+        # parallelize tweet partitioning using a pool of processes (number of processes = number of cores).
+        nb_processes = cpu_count()
+        nb_tweets_per_process = self.size // nb_processes
+        portions = []
+        for i in range(0, self.size, nb_tweets_per_process):
+            portions.append((i, i + nb_tweets_per_process))
+        print(portions)
+        p = Pool()
+        results = p.map(self.discretize_job, portions)
+        results.sort(key=lambda x: x[0])
+
+        # add a 'time-slice' column in the data frame
+        time_slices = []
+        for a_tuple in results:
+            time_slices.extend(a_tuple[1])
+        self.df['time_slice'] = np.array(time_slices)
+
+    def discretize_job(self, portion):
         time_slices = []
 
         # iterate through the corpus
-        for i in range(0, self.size):
+        for i in range(portion[0], portion[1]):
             tweet_date = self.df.iloc[i]['date']
             time_delta = (tweet_date - self.start_date)
             time_delta = time_delta.total_seconds()/60
-            time_slice = int(time_delta/time_slice_length)
+            time_slice = int(time_delta/self.time_slice_length)
             time_slices.append(time_slice)
             self.tweet_count[time_slice] = self.tweet_count.item(time_slice) + 1
             words = self.tokenize(self.df.iloc[i]['text'])
@@ -98,8 +116,7 @@ class Corpus:
                     if mention:
                         self.mention_freq[row, column] = self.mention_freq.item((row, column)) + 1
 
-        # add the new column in the data frame
-        self.df['time_slice'] = np.array(time_slices)
+        return portion[0], time_slices
 
     def cooccurring_words(self, event, p):
         # remove characters that could be interpreted as regular expressions by pandas

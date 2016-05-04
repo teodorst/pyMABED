@@ -26,7 +26,7 @@ class MABED:
 
     def phase1(self):
         print('Phase 1...')
-        # Parallelize phase 1 using a pool of processes (number of processes = number of cores).
+        # parallelize phase 1 using a pool of processes (number of processes = number of cores).
         p = Pool()
         basic_events = p.map(self.maximum_contiguous_subsequence_sum, self.corpus.vocabulary.items())
         print('   Detected events: %d' % len(basic_events))
