@@ -1,6 +1,6 @@
 # pyMABED
 
-pyMABED is a Python implementation of MABED (for more information about MABED, see https://github.com/AdrienGuille/MABED/ or the references below)
+pyMABED is a Python 3 implementation of MABED (for more information about MABED, see https://github.com/AdrienGuille/MABED/ or the references below)
 
 Contributors:
 - Adrien Guille
