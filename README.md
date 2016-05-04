@@ -12,7 +12,6 @@ MABED (Mention-Anomaly-Based Event Detection) is a statistical method for automa
 
 ##Requirements 
 
-	pip install sortedcontainers
 	pip install pandas
 	pip install nltk
 	pip install numpy
