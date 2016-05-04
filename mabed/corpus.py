@@ -3,22 +3,26 @@ import re
 import string
 from datetime import timedelta
 
-import nltk
 import numpy as np
 import pandas
-from nltk import FreqDist
+from nltk import FreqDist, Text, wordpunct_tokenize
 
-import utils
+import mabed.utils as utils
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
 
 
+def extract_vocabulary(token_list):
+    return FreqDist(token_list).most_common()
+
+
 class Corpus:
     MAX_FEATURES = 5000
     TWITTER_TOKENS = ['rt', 'via', '@', '..', '...']
-    STOPWORDS_FILE = '../stopwords_en.txt'
+    STOPWORDS_FILE = 'stopwords_en.txt'
     PUNCTUATION = list(string.punctuation)
+    NB_CORES = 4
 
     def __init__(self, source_file_path, min_absolute_frequency=4, max_relative_frequency=0.5):
         # load stop words
@@ -26,7 +30,7 @@ class Corpus:
         self.stop_words.extend(self.PUNCTUATION)
         self.stop_words.extend(utils.load_stopwords(self.STOPWORDS_FILE))
         self.stop_words = set(self.stop_words)
-        print '   Stop words:', self.stop_words
+        print('   Stop words:', self.stop_words)
 
         # load corpus
         self.df = pandas.read_csv(source_file_path, sep='\t', encoding='utf-8')
@@ -34,22 +38,25 @@ class Corpus:
         self.size = self.df.count(0)[0]
         self.start_date = self.df['date'].min()
         self.end_date = self.df['date'].max()
-        print '   Corpus: %i tweets, spanning from %s to %s' % (self.size,
+        print('   Corpus: %i tweets, spanning from %s to %s' % (self.size,
                                                                 self.start_date,
-                                                                self.end_date)
+                                                                self.end_date))
 
         # extract features
-        all_tweets = []
+        tweets = []
         for i in range(0, self.size):
-            all_tweets.extend(self.tokenize(self.df.iloc[i]['text']))
-        freq_distribution = FreqDist(all_tweets)
+            tweets.extend(self.tokenize(self.df.iloc[i]['text']))
+        freq_distribution = FreqDist(tweets)
         self.vocabulary = {}
         j = 0
-        for word, frequency in freq_distribution.most_common(self.MAX_FEATURES):
+        for word, frequency in freq_distribution.most_common(self.MAX_FEATURES+200):
             if word not in self.stop_words:
-                self.vocabulary[word] = j
-                j += 1
-        print '   Vocabulary: %i unique tokens' % len(self.vocabulary)
+                if frequency > min_absolute_frequency and float(frequency/self.size) < max_relative_frequency:
+                    self.vocabulary[word] = j
+                    j += 1
+            if len(self.vocabulary) == self.MAX_FEATURES:
+                break
+        print('   Vocabulary: %i unique tokens' % len(self.vocabulary))
 
         self.time_slice_count = None
         self.tweet_count = None
@@ -122,13 +129,13 @@ class Corpus:
 
     def print_vocabulary(self):
         for entry in self.vocabulary:
-            print entry.get_word()
+            print(entry.get_word())
 
     @staticmethod
     def tokenize(text):
         text_without_url = re.sub(r'(?:https?\://)\S+', '', text)
-        tokens = nltk.wordpunct_tokenize(text_without_url)
-        clean_text = nltk.Text(tokens)
+        tokens = wordpunct_tokenize(text_without_url)
+        clean_text = Text(tokens)
         words = [w.lower() for w in clean_text]
         return words
 
