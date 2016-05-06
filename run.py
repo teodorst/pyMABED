@@ -8,7 +8,7 @@ __email__ = "adrien.guille@univ-lyon2.fr"
 
 print('Loading corpus...')
 start_time = timeit.default_timer()
-my_corpus = Corpus('input/messages2.csv')
+my_corpus = Corpus('input/messages3.csv')
 elapsed = timeit.default_timer() - start_time
 print('Corpus loaded in %f seconds.' % elapsed)
 
@@ -27,5 +27,6 @@ sigma = 0.6
 start_time = timeit.default_timer()
 mabed = MABED(my_corpus)
 mabed.run(k=k, theta=theta, sigma=sigma)
+mabed.print_events()
 elapsed = timeit.default_timer() - start_time
-print('Top %d events detected in %f seconds.' % (k, elapsed))
+print('Event detection performed in %f seconds.' % elapsed)

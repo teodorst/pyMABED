@@ -6,7 +6,7 @@ from flask import Flask, render_template
 
 from mabed.corpus import Corpus
 from mabed.mabed import MABED
-from mabed import utils
+from mabed import io
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"

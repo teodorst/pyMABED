@@ -5,17 +5,14 @@ from datetime import timedelta
 from multiprocessing import cpu_count, Pool
 
 import numpy as np
+from scipy.sparse import *
 import pandas
 from nltk import FreqDist, Text, wordpunct_tokenize
 
-import mabed.utils as utils
+import mabed.io as utils
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
-
-
-def extract_vocabulary(token_list):
-    return FreqDist(token_list).most_common()
 
 
 class Corpus:
@@ -23,7 +20,6 @@ class Corpus:
     TWITTER_TOKENS = ['rt', 'via', '@', '..', '...']
     STOPWORDS_FILE = 'stopwords_en.txt'
     PUNCTUATION = list(string.punctuation)
-    NB_CORES = 4
 
     def __init__(self, source_file_path, min_absolute_frequency=4, max_relative_frequency=0.5):
         # load stop words
@@ -73,50 +69,59 @@ class Corpus:
         time_delta = time_delta.total_seconds()/60
         self.time_slice_count = int(time_delta // self.time_slice_length) + 1
 
-        # initialize data structures
-        self.tweet_count = np.zeros(self.time_slice_count, dtype=np.int)
-        self.global_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
-        self.mention_freq = np.zeros((len(self.vocabulary), self.time_slice_count), dtype=np.short)
-
         # parallelize tweet partitioning using a pool of processes (number of processes = number of cores).
         nb_processes = cpu_count()
         nb_tweets_per_process = self.size // nb_processes
         portions = []
         for i in range(0, self.size, nb_tweets_per_process):
-            portions.append((i, i + nb_tweets_per_process))
-        print(portions)
+            j = i + nb_tweets_per_process if i + nb_tweets_per_process < self.size else self.size
+            portions.append((i, j))
         p = Pool()
         results = p.map(self.discretize_job, portions)
         results.sort(key=lambda x: x[0])
 
-        # add a 'time-slice' column in the data frame
+        # insert the time-slices number in the data frame and compute the final frequency matrices
         time_slices = []
+        self.tweet_count = np.zeros(self.time_slice_count, dtype=np.int)
+        self.global_freq = csr_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
+        self.mention_freq = csr_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         for a_tuple in results:
             time_slices.extend(a_tuple[1])
+            self.tweet_count = np.add(self.tweet_count, a_tuple[2])
+            self.global_freq = np.add(self.global_freq, a_tuple[3])
+            self.mention_freq = np.add(self.mention_freq, a_tuple[4])
         self.df['time_slice'] = np.array(time_slices)
 
     def discretize_job(self, portion):
+        # initialize data structures
         time_slices = []
+        tweet_count = np.zeros(self.time_slice_count, dtype=np.int)
+        # dictionary-of-keys based sparse matrix that allow incremental construction
+        global_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
+        mention_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
 
         # iterate through the corpus
         for i in range(portion[0], portion[1]):
+            # identify the time-slice that corresponds to the tweet
             tweet_date = self.df.iloc[i]['date']
             time_delta = (tweet_date - self.start_date)
             time_delta = time_delta.total_seconds()/60
             time_slice = int(time_delta/self.time_slice_length)
             time_slices.append(time_slice)
-            self.tweet_count[time_slice] = self.tweet_count.item(time_slice) + 1
+            tweet_count[time_slice] = tweet_count.item(time_slice) + 1
+
+            # tokenize the tweet and compute word frequency
             words = self.tokenize(self.df.iloc[i]['text'])
             mention = '@' in words
             for word in set(words):
                 if self.vocabulary.get(word) is not None:
                     row = self.vocabulary[word]
                     column = time_slice
-                    self.global_freq[row, column] = self.global_freq.item((row, column)) + 1
+                    global_freq[row, column] += 1
                     if mention:
-                        self.mention_freq[row, column] = self.mention_freq.item((row, column)) + 1
-
-        return portion[0], time_slices
+                        mention_freq[row, column] += 1
+        # return the results (dok matrices are converted to csr matrices because dok matrices can't be pickled)
+        return portion[0], time_slices, tweet_count, global_freq.tocsr(), mention_freq.tocsr()
 
     def cooccurring_words(self, event, p):
         # remove characters that could be interpreted as regular expressions by pandas
@@ -155,7 +160,3 @@ class Corpus:
         clean_text = Text(tokens)
         words = [w.lower() for w in clean_text]
         return words
-
-if __name__ == '__main__':
-    my_corpus = Corpus('/Users/adrien/Desktop/messages1.csv')
-    my_corpus.discretize(30)

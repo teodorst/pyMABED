@@ -1,12 +1,11 @@
 # coding: utf-8
-import timeit
 from multiprocessing import Pool
 
 import networkx as nx
 import numpy as np
 
 import mabed.stats as stats
-from mabed.corpus import Corpus
+import mabed.vector as vector
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -33,7 +32,8 @@ class MABED:
         return basic_events
 
     def maximum_contiguous_subsequence_sum(self, vocabulary_entry):
-        mention_freq = self.corpus.mention_freq[vocabulary_entry[1], :]
+        mention_freq = vector.to_dense_vector(self.corpus.mention_freq[vocabulary_entry[1], :],
+                                              self.corpus.time_slice_count)
         total_mention_freq = np.sum(mention_freq)
 
         # compute the time-series that describes the evolution of mention-anomaly
@@ -77,13 +77,15 @@ class MABED:
             basic_event = basic_events[i]
             main_word = basic_event[2]
             candidate_words = self.corpus.cooccurring_words(basic_event, 10)
-            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary[main_word], :]
+            main_word_freq = vector.to_dense_vector(self.corpus.global_freq[self.corpus.vocabulary[main_word], :],
+                                                    self.corpus.time_slice_count)
             related_words = []
 
             # identify candidate words based on co-occurrence
             if candidate_words is not None:
                 for candidate_word in candidate_words:
-                    candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :]
+                    candidate_word_freq = vector.to_dense_vector(self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :],
+                                                                 self.corpus.time_slice_count)
 
                     # compute correlation and filter according to theta
                     weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
@@ -143,7 +145,6 @@ class MABED:
                     break
             final_event = (event[0], event[1], main_term, event[3], event[4])
             final_events.append(final_event)
-            self.print_event(final_event)
         return final_events
 
     def print_event(self, event):
@@ -154,3 +155,8 @@ class MABED:
                                        str(self.corpus.to_date(event[1][1])),
                                        event[2],
                                        ', '.join(related_words)))
+
+    def print_events(self):
+        print('   %d events:' % len(self.events))
+        for event in self.events:
+            self.print_event(event)
