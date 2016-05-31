@@ -1,6 +1,6 @@
 # pyMABED
 
-pyMABED is a Python 3 implementation of MABED (for more information about MABED, see https://github.com/AdrienGuille/MABED/ or the references below)
+pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of the MIT licence.
 
 Contributors:
 - Adrien Guille
@@ -10,7 +10,7 @@ Contributors:
 
 MABED (Mention-Anomaly-Based Event Detection) is a statistical method for automatically detecting significant events that most interest Twitter users from the stream of tweets they publish. In contrast with existing methods, it doesn't only focus on the textual content of tweets but also leverages the frequency of social interactions that occur between users (i.e. mentions). MABED also differs from the literature in that it dynamically estimates the period of time during which each event is discussed rather than assuming a predefined fixed duration for all events.
 
-##Requirements 
+## Requirements 
 
 	pip install pandas
 	pip install nltk
