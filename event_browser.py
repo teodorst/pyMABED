@@ -27,11 +27,12 @@ print('Partitioning done in %f seconds.' % elapsed)
 
 print('Running MABED...')
 k = 10
+p = 10
 theta = 0.6
 sigma = 0.6
 start_time = timeit.default_timer()
 mabed = MABED(my_corpus)
-mabed.run(k=k, theta=theta, sigma=sigma)
+mabed.run(k=k, p=p, theta=theta, sigma=sigma)
 elapsed = timeit.default_timer() - start_time
 print('Top %d events detected in %f seconds.' % (k, elapsed))
 
@@ -60,6 +61,8 @@ for event in mabed.events:
         value = 0
         if time_interval[0] <= i <= time_interval[1]:
             value = raw_anomaly[i]
+            if value < 0:
+                value = 0
         formatted_anomaly.append('['+str(formatted_dates[i])+','+str(value)+']')
     impact_data.append('{"key":"' + main_term + '", "values":[' + ','.join(formatted_anomaly) + ']}')
 

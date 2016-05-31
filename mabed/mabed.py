@@ -18,10 +18,18 @@ class MABED:
         self.event_graph = None
         self.redundancy_graph = None
         self.events = None
+        self.p = None
+        self.k = None
+        self.theta = None
+        self.sigma = None
 
-    def run(self, k=10, theta=0.6, sigma=0.5):
+    def run(self, k=10, p=10, theta=0.6, sigma=0.5):
+        self.p = p
+        self.k = k
+        self.theta = theta
+        self.sigma = sigma
         basic_events = self.phase1()
-        return self.phase2(basic_events, k, theta, sigma)
+        return self.phase2(basic_events)
 
     def phase1(self):
         print('Phase 1...')
@@ -59,7 +67,7 @@ class MABED:
         basic_event = (mag, max_interval, vocabulary_entry[0], anomaly)
         return basic_event
 
-    def phase2(self, basic_events, k=10, theta=0.7, sigma=0.5):
+    def phase2(self, basic_events):
         print('Phase 2...')
 
         # sort the events detected during phase 1 according to their magnitude of impact
@@ -73,10 +81,10 @@ class MABED:
         refined_events = []
 
         # phase 2 goes on until the top k (distinct) events have been identified
-        while unique_events < k and i < len(basic_events):
+        while unique_events < self.k and i < len(basic_events):
             basic_event = basic_events[i]
             main_word = basic_event[2]
-            candidate_words = self.corpus.cooccurring_words(basic_event, 10)
+            candidate_words = self.corpus.cooccurring_words(basic_event, self.p)
             main_word_freq = vector.to_dense_vector(self.corpus.global_freq[self.corpus.vocabulary[main_word], :],
                                                     self.corpus.time_slice_count)
             related_words = []
@@ -89,13 +97,13 @@ class MABED:
 
                     # compute correlation and filter according to theta
                     weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
-                    if weight > theta:
+                    if weight >= self.theta:
                         related_words.append((candidate_word, weight))
 
                 if len(related_words) > 1:
                     refined_event = (basic_event[0], basic_event[1], main_word, related_words, basic_event[3])
                     # check if this event is distinct from those already stored in the event graph
-                    if self.update_graphs(refined_event, sigma):
+                    if self.update_graphs(refined_event):
                         refined_events.append(refined_event)
                         unique_events += 1
             i += 1
@@ -109,24 +117,35 @@ class MABED:
         # return the difference between the observed frequency and the expected frequency
         return observation - expectation
 
-    def update_graphs(self, event, sigma):
+    def update_graphs(self, event):
         redundant = False
         main_word = event[2]
+        # check whether 'event' is redundant with another event already stored in the event graph or not
         if self.event_graph.has_node(main_word):
             for related_word, weight in event[3]:
                 if self.event_graph.has_edge(main_word, related_word):
                     interval_0 = self.event_graph.node[related_word]['interval']
                     interval_1 = event[1]
-                    if stats.overlap_coefficient(interval_0, interval_1) > sigma:
+                    if stats.overlap_coefficient(interval_0, interval_1) > self.sigma:
                         self.redundancy_graph.add_node(main_word, description=event)
-                        self.redundancy_graph.add_node(related_word, description=event)
+                        self.redundancy_graph.add_node(related_word, description=self.get_event(related_word))
                         self.redundancy_graph.add_edge(main_word, related_word)
                         redundant = True
+                        break
         if not redundant:
-            self.event_graph.add_node(event[2], interval=event[1], main_term=True)
+            self.event_graph.add_node(event[2], interval=event[1], mag=event[0], main_term=True)
             for related_word, weight in event[3]:
                 self.event_graph.add_edge(related_word, event[2], weight=weight)
         return not redundant
+
+    def get_event(self, main_term):
+        if self.event_graph.has_node(main_term):
+            event_node = self.event_graph.node[main_term]
+            if event_node['main_term']:
+                related_words = []
+                for node in self.event_graph.predecessors(main_term):
+                    related_words.append((node, self.event_graph.get_edge_data(node, main_term)['weight']))
+                return event_node['mag'], event_node['interval'], main_term, related_words
 
     def merge_redundant_events(self, events):
         # compute the connected components in the redundancy graph
@@ -139,13 +158,33 @@ class MABED:
         for event in events:
             main_word = event[2]
             main_term = main_word
+            descriptions = []
             for component in components:
                 if main_word in component:
                     main_term = ', '.join(component)
+                    for node in component:
+                        descriptions.append(self.redundancy_graph.node[node]['description'])
                     break
-            final_event = (event[0], event[1], main_term, event[3], event[4])
+            if len(descriptions) == 0:
+                related_words = event[3]
+            else:
+                related_words = self.merge_related_words(main_term, descriptions)
+            final_event = (event[0], event[1], main_term, related_words, event[4])
             final_events.append(final_event)
         return final_events
+
+    def merge_related_words(self, main_term, descriptions):
+        all_related_words = []
+        for desc in descriptions:
+            all_related_words.extend(desc[3])
+        all_related_words.sort(key=lambda tup: tup[1], reverse=True)
+        merged_related_words = []
+        for word, weight in all_related_words:
+            if word not in main_term and dict(merged_related_words).get(word) is None:
+                if len(merged_related_words) == self.p:
+                    break
+                merged_related_words.append((word, weight))
+        return merged_related_words
 
     def print_event(self, event):
         related_words = []
@@ -157,6 +196,6 @@ class MABED:
                                        ', '.join(related_words)))
 
     def print_events(self):
-        print('   %d events:' % len(self.events))
+        print('   Top %d events:' % len(self.events))
         for event in self.events:
             self.print_event(event)

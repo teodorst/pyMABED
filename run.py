@@ -22,11 +22,12 @@ print('Partitioning done in %f seconds.' % elapsed)
 
 print('Running MABED...')
 k = 10
+p = 10
 theta = 0.6
 sigma = 0.6
 start_time = timeit.default_timer()
 mabed = MABED(my_corpus)
-mabed.run(k=k, theta=theta, sigma=sigma)
+mabed.run(k=k, p=p, theta=theta, sigma=sigma)
 mabed.print_events()
 elapsed = timeit.default_timer() - start_time
 print('Event detection performed in %f seconds.' % elapsed)
