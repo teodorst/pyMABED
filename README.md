@@ -2,7 +2,7 @@
 
 ## About
 
-pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of the MIT licence. For more information, see the section below.
+pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of the MIT licence. For more information about MABED, see the [section](#mabed) below.
 
 ## Contributors
 
