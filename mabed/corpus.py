@@ -9,7 +9,7 @@ from scipy.sparse import *
 import pandas
 from nltk import FreqDist, Text, wordpunct_tokenize
 
-import mabed.io as utils
+import mabed.io as io
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -25,7 +25,7 @@ class Corpus:
         # load stop words
         self.stop_words = self.TWITTER_TOKENS
         self.stop_words.extend(self.PUNCTUATION)
-        self.stop_words.extend(utils.load_stopwords(self.STOPWORDS_FILE))
+        self.stop_words.extend(io.load_stopwords(self.STOPWORDS_FILE))
         self.stop_words = set(self.stop_words)
         print('   Stop words:', self.stop_words)
 

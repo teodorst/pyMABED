@@ -1,3 +1,4 @@
+*_local.py
 
 .idea/
 
@@ -5,4 +6,4 @@
 
 *.pickle
 
-input/all_messages.csv
+input/*
