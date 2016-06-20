@@ -11,8 +11,7 @@ pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of th
 
 ## Requirements 
 
-	pip install pandas
-	pip install nltk
+	pip install scipy
 	pip install numpy
 	pip install networkx
 
