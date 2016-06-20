@@ -3,12 +3,14 @@
 # std
 import time
 import argparse
-import pickle
 import os
 
 # web
 from flask import Flask, render_template
 from flask_frozen import Freezer
+
+# mabed
+import mabed.io as io
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -18,19 +20,20 @@ event_browser = Flask(__name__, static_folder='browser/static', template_folder=
 
 @event_browser.route('/')
 def index():
+    print(event_descriptions)
     return render_template('template.html',
                            events=event_descriptions,
                            event_impact='[' + ','.join(impact_data) + ']',
-                           k=args.k,
-                           theta=args.theta,
-                           sigma=args.sigma)
+                           k=mabed.k,
+                           theta=mabed.theta,
+                           sigma=mabed.sigma)
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Build event browser')
     p.add_argument('i', metavar='input', type=str, help='Input pickle file')
-    p.add_argument('o', metavar='input', type=str, help='Output html directory')
+    p.add_argument('--o', metavar='output', type=str, help='Output html directory', default=None)
     args = p.parse_args()
-    mabed = pickle.load(args.i)
+    mabed = io.load_events(args.i)
 
     # format data
     event_descriptions = []
@@ -61,12 +64,13 @@ if __name__ == '__main__':
             formatted_anomaly.append('['+str(formatted_dates[i])+','+str(value)+']')
         impact_data.append('{"key":"' + main_term + '", "values":[' + ','.join(formatted_anomaly) + ']}')
 
-    # freeze the event event browser
-    os.makedirs(args.o)
-    print('Freezing event browser...')
-    event_browser_freezer = Freezer(event_browser)
-    event_browser.debug = False
-    event_browser.testing = True
-    event_browser.config['ASSETS_DEBUG'] = False
-    event_browser_freezer.freeze()
-    print('Done.')
+    event_browser.run(debug=False, host='localhost', port=2016)
+
+    if args.o is not None:
+        os.makedirs(args.o)
+        print('Freezing event browser...')
+        event_browser_freezer = Freezer(event_browser)
+        event_browser.debug = False
+        event_browser.config['ASSETS_DEBUG'] = False
+        event_browser_freezer.freeze()
+        print('Done.')

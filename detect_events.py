@@ -8,6 +8,7 @@ import pickle
 # mabed
 from mabed.corpus import Corpus
 from mabed.mabed import MABED
+import mabed.io as io
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -25,6 +26,10 @@ if __name__ == '__main__':
     p.add_argument('--t', metavar='theta', type=float, help='Theta, default to 0.6', default=0.6)
     p.add_argument('--s', metavar='sigma', type=float, help='Sigma, default to 0.6', default=0.6)
     args = p.parse_args()
+    print('Parameters:')
+    print('   Corpus: %s\n   k: %d\n   Stop-words: %s\n   Min. abs. word frequency: %d\n   Max. rel. word frequency: %f' %
+          (args.i, args.k, args.sw, args.maf, args.mrf))
+    print('   p: %d\n   theta: %f\n   sigma: %f' % (args.p, args.t, args.s))
 
     print('Loading corpus...')
     start_time = timeit.default_timer()
@@ -52,5 +57,5 @@ if __name__ == '__main__':
     print('Event detection performed in %f seconds.' % elapsed)
 
     if args.o is not None:
-        pickle.dump(mabed, open(args.o, 'wb'))
+        io.save_events(mabed, args.o)
         print('Events saved in %s' % args.o)
