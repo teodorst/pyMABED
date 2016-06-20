@@ -61,7 +61,6 @@ class Corpus:
                 if frequency > min_absolute_freq and float(frequency / self.size) < max_relative_freq and word not in self.stopwords:
                     self.vocabulary[word] = vocabulary_size
                     vocabulary_size += 1
-            print(self.vocabulary)
             self.start_date = datetime.strptime(self.start_date, "%Y-%m-%d %H:%M:%S")
             self.end_date = datetime.strptime(self.end_date, "%Y-%m-%d %H:%M:%S")
             print('   Corpus: %i tweets, spanning from %s to %s' % (self.size,
@@ -89,7 +88,7 @@ class Corpus:
         self.tweet_count = np.zeros(self.time_slice_count)
         print('   Number of time-slices: %d' % self.time_slice_count)
 
-        #
+        # compute word frequency
         self.global_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         self.mention_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         with open(self.source_file_path, 'r') as input_file:
@@ -103,7 +102,7 @@ class Corpus:
                 time_delta = time_delta.total_seconds() / 60
                 time_slice = int(time_delta / self.time_slice_length)
                 self.tweet_count[time_slice] += 1
-                # tokenize the tweet and compute word frequency
+                # tokenize the tweet and update word frequency
                 tweet_text = line[text_column_index]
                 words = self.tokenize(tweet_text)
                 mention = '@' in tweet_text
@@ -115,6 +114,8 @@ class Corpus:
                             self.mention_freq[word_id, time_slice] += 1
                 with open('corpus/' + str(time_slice), 'a') as time_slice_file:
                     time_slice_file.write(tweet_text+'\n')
+        self.global_freq = self.global_freq.tocsr()
+        self.mention_freq = self.mention_freq.tocsr()
 
     def to_date(self, time_slice):
         a_date = self.start_date + timedelta(minutes=time_slice*self.time_slice_length)
@@ -127,6 +128,7 @@ class Corpus:
         return [token.strip(string.punctuation).lower() for token in raw_tokens if len(token) > 1 and 'http' not in token]
 
     def cooccurring_words(self, event, p):
+        main_word = event[2]
         word_frequency = {}
         for i in range(event[1][0], event[1][1] + 1):
             with open('corpus/' + str(i), 'r') as input_file:
@@ -134,11 +136,12 @@ class Corpus:
                     words = self.tokenize(tweet_text)
                     if event[2] in words:
                         for word in words:
-                            if len(word) > 1 and self.vocabulary.get(word) is not None:
-                                frequency = word_frequency.get(word)
-                                if frequency is None:
-                                    frequency = 0
-                                word_frequency[word] = frequency + 1
+                            if word != main_word:
+                                if len(word) > 1 and self.vocabulary.get(word) is not None:
+                                    frequency = word_frequency.get(word)
+                                    if frequency is None:
+                                        frequency = 0
+                                    word_frequency[word] = frequency + 1
         # sort words w.r.t frequency
         vocabulary = list(word_frequency.items())
         vocabulary.sort(key=lambda x: x[1], reverse=True)
