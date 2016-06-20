@@ -4,6 +4,7 @@
 import time
 import argparse
 import os
+import shutil
 
 # web
 from flask import Flask, render_template
@@ -20,7 +21,6 @@ event_browser = Flask(__name__, static_folder='browser/static', template_folder=
 
 @event_browser.route('/')
 def index():
-    print(event_descriptions)
     return render_template('template.html',
                            events=event_descriptions,
                            event_impact='[' + ','.join(impact_data) + ']',
@@ -33,9 +33,12 @@ if __name__ == '__main__':
     p.add_argument('i', metavar='input', type=str, help='Input pickle file')
     p.add_argument('--o', metavar='output', type=str, help='Output html directory', default=None)
     args = p.parse_args()
+
+    print('Loading events from %s...' % args.i)
     mabed = io.load_events(args.i)
 
     # format data
+    print('Preparing data...')
     event_descriptions = []
     impact_data = []
     formatted_dates = []
@@ -64,13 +67,19 @@ if __name__ == '__main__':
             formatted_anomaly.append('['+str(formatted_dates[i])+','+str(value)+']')
         impact_data.append('{"key":"' + main_term + '", "values":[' + ','.join(formatted_anomaly) + ']}')
 
-    event_browser.run(debug=False, host='localhost', port=2016)
-
     if args.o is not None:
+        if os.path.exists(args.o):
+            shutil.rmtree(args.o)
         os.makedirs(args.o)
-        print('Freezing event browser...')
+        print('Freezing event browser into %s...' % args.o)
         event_browser_freezer = Freezer(event_browser)
+        event_browser.config.update(
+            FREEZER_DESTINATION=args.o,
+            FREEZER_RELATIVE_URLS=True,
+        )
         event_browser.debug = False
         event_browser.config['ASSETS_DEBUG'] = False
         event_browser_freezer.freeze()
         print('Done.')
+    else:
+        event_browser.run(debug=False, host='localhost', port=2016)
