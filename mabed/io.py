@@ -15,6 +15,8 @@ def load_corpus(file_path):
 
 
 def load_stopwords(file_path):
-    stopwords_file = codecs.open(file_path, 'r', 'utf-8')
-    stopwords = stopwords_file.readlines()
-    return [line.rstrip('\n') for line in stopwords]
+    stopwords = set()
+    with open(file_path, 'r') as input_file:
+        for line in input_file.readlines():
+            stopwords.add(line.strip('\n'))
+    return stopwords

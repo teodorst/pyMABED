@@ -16,7 +16,10 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Perform mention-anomaly-based event detection (MABED)')
     p.add_argument('i', metavar='input', type=str, help='Input csv file')
     p.add_argument('k', metavar='top_k_events', type=int, help='Number of top events to detect')
+    p.add_argument('--sw', metavar='stopwords', type=str, help='Stop-word list', default='stopwords/twitter_en.txt')
     p.add_argument('--o', metavar='output', type=str, help='Output pickle file', default=None)
+    p.add_argument('--maf', metavar='min_absolute_frequency', type=int, help='Minimum absolute word frequency, default to 10', default=10)
+    p.add_argument('--mrf', metavar='max_relative_frequency', type=float, help='Maximum absolute word frequency, default to 0.4', default=0.4)
     p.add_argument('--tsl', metavar='time_slice_length', type=int, help='Time-slice length, default to 30 (minutes)', default=30)
     p.add_argument('--p', metavar='p', type=int, help='Number of candidate words per event, default to 10', default=10)
     p.add_argument('--t', metavar='theta', type=float, help='Theta, default to 0.6', default=0.6)
@@ -25,7 +28,7 @@ if __name__ == '__main__':
 
     print('Loading corpus...')
     start_time = timeit.default_timer()
-    my_corpus = Corpus(args.i)
+    my_corpus = Corpus(args.i, args.sw, args.maf, args.mrf)
     elapsed = timeit.default_timer() - start_time
     print('Corpus loaded in %f seconds.' % elapsed)
 
@@ -33,7 +36,6 @@ if __name__ == '__main__':
     print('Partitioning tweets into %d-minute time-slices...' % time_slice_length)
     start_time = timeit.default_timer()
     my_corpus.discretize(time_slice_length)
-    print('   Time-slices: %i' % my_corpus.time_slice_count)
     elapsed = timeit.default_timer() - start_time
     print('Partitioning done in %f seconds.' % elapsed)
 

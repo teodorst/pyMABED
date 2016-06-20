@@ -1,11 +1,12 @@
 # coding: utf-8
+
+# std
 from multiprocessing import Pool
 
+# math
 import networkx as nx
 import numpy as np
-
-import mabed.stats as stats
-import mabed.vector as vector
+import mabed.stats as st
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -33,15 +34,15 @@ class MABED:
 
     def phase1(self):
         print('Phase 1...')
-        # parallelize phase 1 using a pool of processes (number of processes = number of cores).
-        p = Pool()
-        basic_events = p.map(self.maximum_contiguous_subsequence_sum, self.corpus.vocabulary.items())
+        basic_events = []
+        for vocabulary_entry in self.corpus.vocabulary.items():
+            basic_events.append(self.maximum_contiguous_subsequence_sum(vocabulary_entry))
         print('   Detected events: %d' % len(basic_events))
         return basic_events
 
     def maximum_contiguous_subsequence_sum(self, vocabulary_entry):
-        mention_freq = vector.to_dense_vector(self.corpus.mention_freq[vocabulary_entry[1], :],
-                                              self.corpus.time_slice_count)
+        mention_freq = self.corpus.mention_freq[vocabulary_entry[1], :].toarray()
+        mention_freq = mention_freq[0, :]
         total_mention_freq = np.sum(mention_freq)
 
         # compute the time-series that describes the evolution of mention-anomaly
@@ -85,18 +86,18 @@ class MABED:
             basic_event = basic_events[i]
             main_word = basic_event[2]
             candidate_words = self.corpus.cooccurring_words(basic_event, self.p)
-            main_word_freq = vector.to_dense_vector(self.corpus.global_freq[self.corpus.vocabulary[main_word], :],
-                                                    self.corpus.time_slice_count)
+            main_word_freq = self.corpus.global_freq[self.corpus.vocabulary[main_word], :].toarray()
+            main_word_freq = main_word_freq[0, :]
             related_words = []
 
             # identify candidate words based on co-occurrence
             if candidate_words is not None:
                 for candidate_word in candidate_words:
-                    candidate_word_freq = vector.to_dense_vector(self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :],
-                                                                 self.corpus.time_slice_count)
+                    candidate_word_freq = self.corpus.global_freq[self.corpus.vocabulary[candidate_word], :].toarray()
+                    candidate_word_freq = candidate_word_freq[0, :]
 
                     # compute correlation and filter according to theta
-                    weight = (stats.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
+                    weight = (st.erdem_correlation(main_word_freq, candidate_word_freq) + 1) / 2
                     if weight >= self.theta:
                         related_words.append((candidate_word, weight))
 
@@ -126,7 +127,7 @@ class MABED:
                 if self.event_graph.has_edge(main_word, related_word):
                     interval_0 = self.event_graph.node[related_word]['interval']
                     interval_1 = event[1]
-                    if stats.overlap_coefficient(interval_0, interval_1) > self.sigma:
+                    if st.overlap_coefficient(interval_0, interval_1) > self.sigma:
                         self.redundancy_graph.add_node(main_word, description=event)
                         self.redundancy_graph.add_node(related_word, description=self.get_event(related_word))
                         self.redundancy_graph.add_edge(main_word, related_word)
