@@ -11,7 +11,7 @@ from flask import Flask, render_template
 from flask_frozen import Freezer
 
 # mabed
-import mabed.io as io
+import mabed.utils as utils
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     print('Loading events from %s...' % args.i)
-    mabed = io.load_events(args.i)
+    mabed = utils.load_events(args.i)
 
     # format data
     print('Preparing data...')

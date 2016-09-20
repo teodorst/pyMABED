@@ -3,12 +3,11 @@
 # std
 import timeit
 import argparse
-import pickle
 
 # mabed
 from mabed.corpus import Corpus
 from mabed.mabed import MABED
-import mabed.io as io
+import mabed.utils as utils
 
 __author__ = "Adrien Guille"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -57,5 +56,5 @@ if __name__ == '__main__':
     print('Event detection performed in %f seconds.' % elapsed)
 
     if args.o is not None:
-        io.save_events(mabed, args.o)
+        utils.save_events(mabed, args.o)
         print('Events saved in %s' % args.o)

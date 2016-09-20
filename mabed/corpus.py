@@ -6,13 +6,14 @@ from datetime import timedelta, datetime
 import csv
 import os
 import shutil
+import pickle
 
 # math
 import numpy as np
 from scipy.sparse import *
 
 # mabed
-import mabed.io as io
+import mabed.utils as utils
 
 __authors__ = "Adrien Guille, Nicolas Dugué"
 __email__ = "adrien.guille@univ-lyon2.fr"
@@ -20,14 +21,14 @@ __email__ = "adrien.guille@univ-lyon2.fr"
 
 class Corpus:
 
-    def __init__(self, source_file_path, stopwords_file_path, min_absolute_freq=10, max_relative_freq=0.4):
+    def __init__(self, source_file_path, stopwords_file_path, min_absolute_freq=10, max_relative_freq=0.4, save_voc=False):
         self.source_file_path = source_file_path
         self.size = 0
         self.start_date = '3000-01-01 00:00:00'
         self.end_date = '1000-01-01 00:00:00'
 
         # load stop-words
-        self.stopwords = io.load_stopwords(stopwords_file_path)
+        self.stopwords = utils.load_stopwords(stopwords_file_path)
 
         # identify features
         with open(source_file_path, 'r') as input_file:
@@ -54,6 +55,9 @@ class Corpus:
             # sort words w.r.t frequency
             vocabulary = list(word_frequency.items())
             vocabulary.sort(key=lambda x: x[1], reverse=True)
+            if save_voc:
+                with open('vocabulary.pickle', 'wb') as output_file:
+                    pickle.dump(vocabulary, output_file)
             self.vocabulary = {}
             vocabulary_size = 0
             # construct the vocabulary map
