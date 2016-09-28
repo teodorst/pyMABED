@@ -2,7 +2,7 @@
 
 ## About
 
-pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of the MIT licence. For more information about MABED, see the [section](#mabed) below.
+pyMABED is a Python 3 implementation of [MABED](#mabed), distributed under the terms of the MIT licence. If you make use of this software in your research, please cite one the [references](#references) below.
 
 ## Contributors
 
@@ -11,9 +11,60 @@ pyMABED is a Python 3 implementation of MABED, dsitributed under the terms of th
 
 ## Requirements 
 
+pyMABED requires scipy, numpy and networkx; these scientific libraries come pre-installed with the [Anaconda Python](https://anaconda.org) distribution. You can also install them manually via [pip](https://pypi.python.org):  
+
 	pip install scipy
 	pip install numpy
 	pip install networkx
+	
+## Usage
+
+Provided a set of tweets, pyMABED can (i) perform event detection and (ii) generate a visualization of the detected events.
+
+### Detect events
+
+detect_events.py has two mandatory (positional) arguments:
+ - the path to the csv file containing the tweets,formatted as follows: a tweet per line, with at least a field named 'date' (%Y-%m-%d %H:%M:%S) and a field name 'text' (content of the tweet) ; any other field is ignored
+ - the number of top events to detect (e.g. 10)
+
+optional arguments:
+
+  -h, --help            show this help message and exit
+  
+  --sw stopwords        Stop-word list
+  
+  --o output            Output pickle file
+  
+  --maf min_absolute_frequency
+                        Minimum absolute word frequency, default to 10
+                        
+  --mrf max_relative_frequency
+                        Maximum absolute word frequency, default to 0.4
+                        
+  --tsl time_slice_length
+                        Time-slice length, default to 30 (minutes)
+                        
+  --p p                 Number of candidate words per event, default to 10
+  
+  --t theta             Theta, default to 0.6
+  
+  --s sigma             Sigma, default to 0.6
+  
+By default, detect_events.py prints the descriptions of the detected events in the terminal. In order to generate the visualization, you have to run detect_events.py with the --o argument and specify a path.
+
+### Visualize events
+
+build_event_browser.py has one mandatory (positional) argument:
+
+- the path to the file that describes the events to visualize (i.e. the path that was passed to detect_events.py with the --o argument) 
+
+optional arguments:
+
+  -h, --help  show this help message and exit
+  
+  --o output  Output html directory
+
+By default, build_event_browser.py starts a local Web server accessible at http://localhost:2016/. If a path is passed with the --o argument, the visualization is saved on disk in html format.
 
 # MABED
 
@@ -36,3 +87,4 @@ http://mediamining.univ-lyon2.fr/people/guille/mabed.php
   In Proceedings of the 2014 IEEE/ACM International Conference on
   Advances in Social Network Mining and Analysis (ASONAM 2014),
   pp. 375-382 [DOI: 10.1109/ASONAM.2014.6921613]
+  
