@@ -17,6 +17,7 @@ if __name__ == '__main__':
     p.add_argument('i', metavar='input', type=str, help='Input csv file')
     p.add_argument('k', metavar='top_k_events', type=int, help='Number of top events to detect')
     p.add_argument('--sw', metavar='stopwords', type=str, help='Stop-word list', default='stopwords/twitter_en.txt')
+    p.add_argument('--sep', metavar='separator', type=str, help='CSV separator', default='\t')
     p.add_argument('--o', metavar='output', type=str, help='Output pickle file', default=None)
     p.add_argument('--maf', metavar='min_absolute_frequency', type=int, help='Minimum absolute word frequency, default to 10', default=10)
     p.add_argument('--mrf', metavar='max_relative_frequency', type=float, help='Maximum absolute word frequency, default to 0.4', default=0.4)
@@ -32,7 +33,7 @@ if __name__ == '__main__':
 
     print('Loading corpus...')
     start_time = timeit.default_timer()
-    my_corpus = Corpus(args.i, args.sw, args.maf, args.mrf)
+    my_corpus = Corpus(args.i, args.sw, args.maf, args.mrf, args.sep)
     elapsed = timeit.default_timer() - start_time
     print('Corpus loaded in %f seconds.' % elapsed)
 

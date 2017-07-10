@@ -21,18 +21,19 @@ __email__ = "adrien.guille@univ-lyon2.fr"
 
 class Corpus:
 
-    def __init__(self, source_file_path, stopwords_file_path, min_absolute_freq=10, max_relative_freq=0.4, save_voc=False):
+    def __init__(self, source_file_path, stopwords_file_path, min_absolute_freq=10, max_relative_freq=0.4, separator='\t', save_voc=False):
         self.source_file_path = source_file_path
         self.size = 0
         self.start_date = '3000-01-01 00:00:00'
         self.end_date = '1000-01-01 00:00:00'
+        self.separator = separator
 
         # load stop-words
         self.stopwords = utils.load_stopwords(stopwords_file_path)
 
         # identify features
         with open(source_file_path, 'r') as input_file:
-            csv_reader = csv.reader(input_file, delimiter='\t')
+            csv_reader = csv.reader(input_file, delimiter=self.separator)
             header = next(csv_reader)
             text_column_index = header.index('text')
             date_column_index = header.index('date')
@@ -101,7 +102,7 @@ class Corpus:
         self.global_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         self.mention_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         with open(self.source_file_path, 'r') as input_file:
-            csv_reader = csv.reader(input_file, delimiter='\t')
+            csv_reader = csv.reader(input_file, delimiter=self.separator)
             header = next(csv_reader)
             text_column_index = header.index('text')
             date_column_index = header.index('date')
