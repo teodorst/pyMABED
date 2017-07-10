@@ -92,6 +92,11 @@ class Corpus:
         self.tweet_count = np.zeros(self.time_slice_count)
         print('   Number of time-slices: %d' % self.time_slice_count)
 
+        # create empty files
+        for time_slice in range(self.time_slice_count):
+            dummy_file = open('corpus/' + str(time_slice), 'w')
+            dummy_file.write('')
+
         # compute word frequency
         self.global_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
         self.mention_freq = dok_matrix((len(self.vocabulary), self.time_slice_count), dtype=np.short)
