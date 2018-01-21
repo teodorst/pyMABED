@@ -53,8 +53,8 @@ optional arguments:
   --sep separator       Separator, default to `\t` (tab)
   
 By default, detect_events.py prints the descriptions of the detected events in the terminal. In order to generate the visualization, you have to run detect_events.py with the --o argument and specify a path.  
-Event detection is not multithreaded. Multiple instances on different datasets must be run from own working directories each, because temporary files are kept in a `corpus` directory inside the cwd.  
-If your data includes emoji or other multibyte characters, be sure to remove them beforehand or use the correct encodings for the csv.
+
+Event detection is not multithreaded. Multiple instances on different datasets must be run from own their working directories each, because temporary files are kept in a `corpus` directory inside the cwd. If your data includes emoji or other multibyte characters, be sure to remove them beforehand or use the correct encodings for the csv.
 
 ### Visualize events
 
