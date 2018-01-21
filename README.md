@@ -81,7 +81,7 @@ http://mediamining.univ-lyon2.fr/people/guille/mabed.php
 ## References
 
 - Adrien Guille and Cécile Favre (2015) 
-  Event detection, tracking, and visualization in Twitter: a mention-anomaly-based approach.
+  [Event detection, tracking, and visualization in Twitter: a mention-anomaly-based approach](https://github.com/AdrienGuille/pyMABED/blob/master/mabed.pdf).
   Springer Social Network Analysis and Mining,
   vol. 5, iss. 1, art. 18 [DOI: 10.1007/s13278-015-0258-0]
 
