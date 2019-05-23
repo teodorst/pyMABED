@@ -35,30 +35,32 @@ def get_events(mabed_events):
 
 
 if __name__ == '__main__':
-    with open('results.pickle', 'rb') as pickle_in:
-        mabed_results = pickle.load(pickle_in)
-        events = get_events(mabed_results)
+    for result_file in sys.argv[1:]:
+        with open(result_file, 'rb') as pickle_in:
+            mabed_results = pickle.load(pickle_in)
+            events = get_events(mabed_results)
 
-    if not events:
-        print('no events found')
+        if not events:
+            print('no events found')
 
-    processed_events = []
-    for event in events:
-        match = re.search(event_regex, event)
-        if not match:
-            print('error parsing event: %s', event)
+        processed_events = []
+        for event in events:
+            match = re.search(event_regex, event)
+            if not match:
+                print('error parsing event: %s', event)
 
-        start_date = match.group(1).strip()
-        end_date = match.group(2).strip()
-        main_words_group = match.group(3)
-        main_words = [word.strip() for word in main_words_group.split(',')]
-        related_words = [process_related_word(related_word) for related_word in match.group(4).split(',')]
+            start_date = match.group(1).strip()
+            end_date = match.group(2).strip()
+            main_words_group = match.group(3)
+            main_words = [word.strip() for word in main_words_group.split(',')]
+            related_words = [process_related_word(related_word) for related_word in match.group(4).split(',')]
 
-        processed_events.append({'start_date': start_date, 'end_date': end_date, 'main_words': main_words,
-                                 'related_words': [{'word': r_w[0],
-                                                    'magnitude': r_w[1]} for r_w in related_words]})
+            processed_events.append({'start_date': start_date, 'end_date': end_date, 'main_words': main_words,
+                                     'related_words': [{'word': r_w[0],
+                                                        'magnitude': r_w[1]} for r_w in related_words]})
 
-    print(processed_events)
+        print(processed_events)
 
-    with open('events.json', 'w') as f:
-        json.dump(processed_events, f)
+        output_file = '%s.json' % result_file.split('.')[0]
+        with open(output_file, 'w') as f:
+            json.dump(processed_events, f)
