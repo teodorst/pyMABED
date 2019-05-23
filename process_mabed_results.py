@@ -47,7 +47,8 @@ if __name__ == '__main__':
         for event in events:
             match = re.search(event_regex, event)
             if not match:
-                print('error parsing event: %s', event)
+                print('error parsing event: %s' % event)
+                continue
 
             start_date = match.group(1).strip()
             end_date = match.group(2).strip()
